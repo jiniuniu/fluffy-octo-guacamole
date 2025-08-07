@@ -10,6 +10,7 @@ from db.models import (
     GenerateContentRequest,
     GenerationHistoryResponse,
     HistorySearchRequest,
+    ModifySVGRequest,
     PaginatedResponse,
     StatsResponse,
     SuccessResponse,
@@ -326,3 +327,58 @@ async def export_json(
     except Exception as e:
         logger.error(f"导出JSON失败: {e}")
         raise HTTPException(status_code=500, detail=f"导出失败: {str(e)}")
+
+
+# ============ SVG修改路由 ============
+
+
+@router.post("/history/{history_id}/modify")
+async def modify_svg(
+    history_id: str,
+    request: ModifySVGRequest,
+    generation_service: GenerationService = Depends(get_generation_service),
+):
+    """修改SVG动画"""
+    try:
+        result = await generation_service.modify_svg(
+            history_id=history_id, feedback=request.feedback, model=request.model
+        )
+
+        return {
+            "message": "SVG修改成功",
+            "svg_code": result.svgCode,
+            "timestamp": datetime.now(),
+        }
+
+    except ValueError as e:
+        # 业务异常返回400
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"SVG修改失败: {e}")
+        raise HTTPException(status_code=500, detail=f"修改失败: {str(e)}")
+
+
+@router.get("/history/{history_id}/modifications")
+async def get_modification_history(
+    history_id: str, history_service: HistoryService = Depends(get_history_service)
+):
+    """获取修改历史"""
+    try:
+        record = await history_service.get_by_id(history_id)
+        if not record:
+            raise HTTPException(status_code=404, detail="历史记录未找到")
+
+        modification_count = await history_service.get_modification_count(history_id)
+
+        return {
+            "history_id": history_id,
+            "modification_count": modification_count,
+            "modification_history": record.modification_history,
+            "last_modified": record.updated_at,
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"获取修改历史失败: {e}")
+        raise HTTPException(status_code=500, detail=f"获取失败: {str(e)}")

@@ -30,6 +30,13 @@ class GenerateAnimationRequest(BaseModel):
     model: ModelType = Field(ModelType.CLAUDE, description="使用的模型")
 
 
+class ModifySVGRequest(BaseModel):
+    feedback: str = Field(
+        ..., min_length=1, max_length=1000, description="用户对SVG的反馈"
+    )
+    model: ModelType = Field(ModelType.CLAUDE, description="使用的模型")
+
+
 # 历史记录相关模型
 class GenerationHistoryCreate(BaseModel):
     """创建历史记录的数据模型"""
@@ -57,6 +64,10 @@ class GenerationHistory(BaseModel):
     updated_at: Optional[datetime] = None
     metadata: Optional[Dict[str, Any]] = None
 
+    modification_history: List[Dict[str, Any]] = Field(
+        default_factory=list, description="修改历史记录"
+    )
+
 
 class GenerationHistoryResponse(BaseModel):
     """API响应的历史记录模型（可能隐藏某些字段）"""
@@ -69,6 +80,7 @@ class GenerationHistoryResponse(BaseModel):
     status: GenerationStatus
     created_at: datetime
     metadata: Optional[Dict[str, Any]] = None
+    modification_history: List[Dict[str, Any]] = Field(default_factory=list)
 
 
 # 搜索和分页模型

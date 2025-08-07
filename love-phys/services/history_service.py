@@ -329,22 +329,58 @@ class HistoryService:
             logger.error(f"按状态统计失败: {e}")
             raise
 
-    async def get_user_history(
-        self, user_id: str, limit: int = 20
-    ) -> List[GenerationHistoryResponse]:
-        """获取特定用户的历史记录 (如果有用户系统的话)"""
+    async def update_with_modification(
+        self, history_id: str, new_svg: str, feedback: str, model: str
+    ) -> bool:
+        """更新记录：覆盖SVG并添加修改历史"""
         try:
-            # 这里假设metadata中存储了user_id
-            cursor = (
-                self.collection.find({"metadata.user_id": user_id}, {"_id": 0})
-                .sort("created_at", DESCENDING)
-                .limit(limit)
+            now = datetime.now()
+
+            # 准备修改历史记录
+            modification_record = {
+                "feedback": feedback,
+                "timestamp": now.isoformat(),
+                "model": model,
+            }
+
+            # 更新数据
+            update_data = {
+                "svg_code": new_svg,
+                "updated_at": now,
+                "$push": {"modification_history": modification_record},
+            }
+
+            result = await self.collection.update_one(
+                {"id": history_id},
+                {
+                    "$set": update_data,
+                    "$push": {"modification_history": modification_record},
+                },
             )
 
-            results = await cursor.to_list(length=limit)
+            success = result.modified_count > 0
+            if success:
+                logger.info(f"修改记录更新成功: {history_id}")
+            else:
+                logger.warning(f"修改记录未更新: {history_id}")
 
-            return [GenerationHistoryResponse(**result) for result in results]
+            return success
 
         except Exception as e:
-            logger.error(f"获取用户历史记录失败: {e}")
+            logger.error(f"更新修改记录失败: {e}")
             raise
+
+    async def get_modification_count(self, history_id: str) -> int:
+        """获取记录的修改次数"""
+        try:
+            result = await self.collection.find_one(
+                {"id": history_id}, {"modification_history": 1}
+            )
+
+            if result and "modification_history" in result:
+                return len(result["modification_history"])
+            return 0
+
+        except Exception as e:
+            logger.error(f"获取修改次数失败: {e}")
+            return 0

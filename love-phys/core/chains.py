@@ -1,4 +1,8 @@
-from core.prompts import CONTENT_PROMPT_TEMPLATE, SVG_PROMPT_TEMPLATE
+from core.prompts import (
+    CONTENT_PROMPT_TEMPLATE,
+    SVG_MODIFY_PROMPT_TEMPLATE,
+    SVG_PROMPT_TEMPLATE,
+)
 from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.prompts import PromptTemplate
 from langchain_core.runnables import Runnable
@@ -43,4 +47,30 @@ def create_svg_chain(llm: ChatOpenAI) -> Runnable:
 
     chain = prompt | llm | parser
 
+    return chain
+
+
+class SVGModification(BaseModel):
+    """SVG修改响应模型"""
+
+    svgCode: str = Field(min_length=100, description="修改后的SVG代码必须有实质内容")
+
+
+def create_svg_modify_chain(llm: ChatOpenAI) -> Runnable:
+    """创建SVG修改chain"""
+    parser = PydanticOutputParser(pydantic_object=SVGModification)
+
+    prompt = PromptTemplate(
+        template=SVG_MODIFY_PROMPT_TEMPLATE,
+        input_variables=[
+            "question",
+            "explanation",
+            "current_svg",
+            "user_feedback",
+            "recent_modifications_text",
+        ],
+        partial_variables={"format_instructions": parser.get_format_instructions()},
+    )
+
+    chain = prompt | llm | parser
     return chain

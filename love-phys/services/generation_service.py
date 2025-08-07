@@ -5,8 +5,10 @@ from typing import Any, Dict, Optional, Tuple
 from core.chains import (
     PhysicsContent,
     SVGGeneration,
+    SVGModification,
     create_content_chain,
     create_svg_chain,
+    create_svg_modify_chain,
 )
 from core.llm import get_llm
 from db.models import GenerationStatus
@@ -23,7 +25,7 @@ class GenerationService:
         self.chains: Dict[str, Runnable] = {}
 
     def get_chain(self, model: str, chain_type: str):
-        """获取或创建指定类型的chain"""
+        """获取或创建指定类型的chain - 扩展支持modify类型"""
         cache_key = f"{model}-{chain_type}"
 
         if cache_key not in self.chains:
@@ -34,6 +36,8 @@ class GenerationService:
                 self.chains[cache_key] = create_content_chain(llm)
             elif chain_type == "svg":
                 self.chains[cache_key] = create_svg_chain(llm)
+            elif chain_type == "svg_modify":
+                self.chains[cache_key] = create_svg_modify_chain(llm)
             else:
                 raise ValueError(f"未知的chain类型: {chain_type}")
 
@@ -179,3 +183,55 @@ class GenerationService:
             "cached_chain_types": list(chain_types),
             "total_cached": len(cached_chains),
         }
+
+    async def modify_svg(
+        self, history_id: str, feedback: str, model: str = "claude"
+    ) -> SVGModification:
+        """修改SVG并更新记录"""
+        try:
+            logger.info(f"开始修改SVG: {history_id}, 反馈: {feedback[:50]}...")
+
+            # 1. 获取原记录
+            record = await self.history_service.get_by_id(history_id)
+            if not record:
+                raise ValueError(f"历史记录不存在: {history_id}")
+
+            if record.status != GenerationStatus.SUCCESS:
+                raise ValueError("只能修改成功生成的记录")
+
+            # 2. 构建修改上下文
+            recent_modifications_text = self._build_modifications_text(
+                record.modification_history
+            )
+
+            # 3. 获取或创建修改chain
+            modify_chain = self.get_chain(model, "svg_modify")
+
+            # 4. 调用修改chain
+            result: SVGModification = await modify_chain.ainvoke(
+                {
+                    "question": record.question,
+                    "explanation": record.explanation,
+                    "current_svg": record.svg_code,
+                    "user_feedback": feedback,
+                    "recent_modifications_text": recent_modifications_text,
+                }
+            )
+
+            # 5. 更新记录
+            await self.history_service.update_with_modification(
+                history_id=history_id,
+                new_svg=result.svgCode,
+                feedback=feedback,
+                model=model,
+            )
+
+            logger.info(f"SVG修改成功: {history_id}")
+            return result
+
+        except ValueError:
+            # 业务异常直接抛出
+            raise
+        except Exception as e:
+            logger.error(f"SVG修改失败: {e}")
+            raise
