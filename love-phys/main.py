@@ -5,12 +5,11 @@ import time
 from contextlib import asynccontextmanager
 from datetime import datetime
 
-from api.base_routes import router
+from api.routes import router
 from db.database import close_mongo_connection, connect_to_mongo
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from fastapi.staticfiles import StaticFiles
 
 # 配置日志
 logging.basicConfig(
