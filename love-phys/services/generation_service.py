@@ -1,6 +1,6 @@
 # services/generation_service.py
 import logging
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from core.chains import (
     PhysicsContent,
@@ -235,3 +235,21 @@ class GenerationService:
         except Exception as e:
             logger.error(f"SVG修改失败: {e}")
             raise
+
+    def _build_modifications_text(self, modification_history: List[Dict]) -> str:
+        """构建修改历史文本"""
+        if not modification_history:
+            return "无修改历史"
+
+        # 只显示最近3次修改，避免上下文过长
+        recent = modification_history[-3:]
+
+        texts = []
+        for i, mod in enumerate(recent, 1):
+            timestamp = mod.get("timestamp", "未知时间")
+            feedback = mod.get("feedback", "")
+            model = mod.get("model", "")
+
+            texts.append(f"修改{i}({timestamp[:10]}): {feedback} [模型: {model}]")
+
+        return "\n".join(texts)
