@@ -32,7 +32,12 @@ interface AppStore {
   setStatusFilter: (status: string) => void;
 
   // 业务操作
-  generateFull: (question: string, model: "claude" | "qwen") => Promise<void>;
+  generateFull: (
+    question: string,
+    model: "claude" | "qwen",
+    enableTts?: boolean,
+    voiceType?: string
+  ) => Promise<void>;
   modifySvg: (
     history_id: string,
     feedback: string,
@@ -80,8 +85,13 @@ export const useAppStore = create<AppStore>((set, get) => ({
   setModelFilter: (model) => set({ modelFilter: model }),
   setStatusFilter: (status) => set({ statusFilter: status }),
 
-  // 生成完整内容
-  generateFull: async (question: string, model: "claude" | "qwen") => {
+  // 生成完整内容（支持音频）
+  generateFull: async (
+    question: string,
+    model: "claude" | "qwen",
+    enableTts = true,
+    voiceType = "Cherry"
+  ) => {
     const { setAsyncOperation, addRecord, resetAsyncOperation } = get();
 
     try {
@@ -97,11 +107,27 @@ export const useAppStore = create<AppStore>((set, get) => ({
       const progressInterval = setInterval(() => {
         const current = get().asyncOperation.progress;
         if (current < 90) {
-          setAsyncOperation({ progress: current + Math.random() * 15 });
+          setAsyncOperation({
+            progress: current + Math.random() * 15,
+            currentStep:
+              current < 30
+                ? "📝 正在生成物理解释..."
+                : current < 60
+                  ? "🎨 正在生成SVG动画..."
+                  : enableTts
+                    ? "🎤 正在生成语音解释..."
+                    : "🎯 即将完成...",
+          });
         }
       }, 500);
 
-      const result = await generationApi.generateFull({ question, model });
+      const result = await generationApi.generateFull({
+        question,
+        model,
+        enable_tts: enableTts,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        voice_type: voiceType as any,
+      });
 
       clearInterval(progressInterval);
       setAsyncOperation({
@@ -109,7 +135,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
         currentStep: "✅ 生成完成!",
       });
 
-      // 转换为内部格式
+      // 转换为内部格式（包含音频信息）
       const newRecord: GenerationRecord = {
         id: result.id,
         question: result.question,
@@ -118,6 +144,9 @@ export const useAppStore = create<AppStore>((set, get) => ({
         model: result.model as "claude" | "qwen",
         status: "success",
         created_at: result.created_at,
+        // 音频相关字段
+        audio_url: result.audio?.url,
+        audio_metadata: result.audio?.metadata,
       };
 
       // 添加记录并选中
@@ -223,6 +252,9 @@ export const useAppStore = create<AppStore>((set, get) => ({
         status: item.status as "pending" | "success" | "failed",
         created_at: item.created_at,
         error_message: item.error_message,
+        // 音频相关字段
+        audio_url: item.audio_url,
+        audio_metadata: item.audio_metadata,
       }));
 
       set({

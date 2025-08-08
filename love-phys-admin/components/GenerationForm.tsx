@@ -4,6 +4,14 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useAppStore, useAppActions } from "@/lib/store";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ModelSelector } from "./ModelSelector";
@@ -13,6 +21,8 @@ export function GenerationForm() {
   const [selectedModel, setSelectedModel] = useState<"claude" | "qwen">(
     "claude"
   );
+  const [enableTts, setEnableTts] = useState(true);
+  const [voiceType, setVoiceType] = useState("Cherry");
 
   const store = useAppStore();
   const actions = useAppActions();
@@ -25,7 +35,12 @@ export function GenerationForm() {
     if (!question.trim() || isGenerating) return;
 
     actions.clearError();
-    await actions.generateFull(question.trim(), selectedModel);
+    await actions.generateFull(
+      question.trim(),
+      selectedModel,
+      enableTts,
+      voiceType
+    );
 
     // 只有成功时才清空输入框
     if (!useAppStore.getState().error) {
@@ -34,6 +49,16 @@ export function GenerationForm() {
   };
 
   const isFormValid = question.trim().length >= 5 && !isGenerating;
+
+  const voiceOptions = [
+    { value: "Cherry", label: "Cherry - 甜美女声" },
+    { value: "Chelsie", label: "Chelsie - 标准女声" },
+    { value: "Serena", label: "Serena - 优雅女声" },
+    { value: "Ethan", label: "Ethan - 标准男声" },
+    { value: "Dylan", label: "Dylan - 京腔男声" },
+    { value: "Jada", label: "Jada - 吴语女声" },
+    { value: "Sunny", label: "Sunny - 川音女声" },
+  ];
 
   return (
     <div className="p-4 space-y-6">
@@ -68,6 +93,48 @@ export function GenerationForm() {
         disabled={isGenerating}
       />
 
+      {/* 音频选项 */}
+      <div className="space-y-3">
+        <div className="flex items-center space-x-2">
+          <Checkbox
+            id="enable-tts"
+            checked={enableTts}
+            onCheckedChange={(checked) => setEnableTts(checked as boolean)}
+            disabled={isGenerating}
+          />
+          <label
+            htmlFor="enable-tts"
+            className="text-sm font-medium text-gray-700 cursor-pointer"
+          >
+            🎤 生成语音解释
+          </label>
+        </div>
+
+        {enableTts && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              选择声音类型
+            </label>
+            <Select
+              value={voiceType}
+              onValueChange={setVoiceType}
+              disabled={isGenerating}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="选择声音" />
+              </SelectTrigger>
+              <SelectContent>
+                {voiceOptions.map((voice) => (
+                  <SelectItem key={voice.value} value={voice.value}>
+                    {voice.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+      </div>
+
       {/* 生成按钮 */}
       <Button
         onClick={handleGenerate}
@@ -81,13 +148,19 @@ export function GenerationForm() {
             生成中...
           </>
         ) : (
-          "🎯 生成内容和动画"
+          `🎯 生成内容${enableTts ? "和音频" : ""}动画`
         )}
       </Button>
 
       {!isFormValid && question.length > 0 && question.length < 5 && (
         <p className="text-xs text-orange-600 text-center">
           问题描述至少需要5个字符
+        </p>
+      )}
+
+      {enableTts && (
+        <p className="text-xs text-gray-500 text-center">
+          💡 启用语音功能将为物理解释生成专业的语音朗读
         </p>
       )}
     </div>

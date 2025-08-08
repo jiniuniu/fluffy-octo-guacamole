@@ -8,6 +8,15 @@ export interface GenerationRecord {
   status: "pending" | "success" | "failed";
   created_at: string;
   error_message?: string;
+  // 新增音频相关字段
+  audio_url?: string;
+  audio_metadata?: {
+    voice_type: string;
+    text_length: number;
+    file_size: number;
+    mime_type: string;
+    generated_at: string;
+  };
 }
 
 // 统一的异步操作状态
@@ -22,6 +31,16 @@ export interface AsyncOperation {
 export interface GenerateRequest {
   question: string;
   model: "claude" | "qwen";
+  // 新增TTS相关字段
+  enable_tts?: boolean;
+  voice_type?:
+    | "Chelsie"
+    | "Cherry"
+    | "Ethan"
+    | "Serena"
+    | "Dylan"
+    | "Jada"
+    | "Sunny";
 }
 
 export interface ModifyRequest {

@@ -47,7 +47,7 @@ async function apiRequest<T>(
 
 // 生成相关API - 只保留使用的接口
 export const generationApi = {
-  // 生成完整内容
+  // 生成完整内容（包含音频支持）
   async generateFull(data: GenerateRequest) {
     return apiRequest<{
       id: string;
@@ -56,9 +56,24 @@ export const generationApi = {
       content: { explanation: string };
       animation: { svgCode: string };
       created_at: string;
+      // 新增音频字段
+      audio?: {
+        url: string;
+        metadata: {
+          voice_type: string;
+          text_length: number;
+          file_size: number;
+          mime_type: string;
+          generated_at: string;
+        };
+      };
     }>("/generate/full", {
       method: "POST",
-      body: JSON.stringify(data),
+      body: JSON.stringify({
+        ...data,
+        enable_tts: data.enable_tts ?? true, // 默认启用TTS
+        voice_type: data.voice_type ?? "Cherry", // 默认声音
+      }),
     });
   },
 
@@ -101,6 +116,15 @@ export const historyApi = {
         status: string;
         created_at: string;
         error_message?: string;
+        // 新增音频字段
+        audio_url?: string;
+        audio_metadata?: {
+          voice_type: string;
+          text_length: number;
+          file_size: number;
+          mime_type: string;
+          generated_at: string;
+        };
       }>;
       total: number;
       page: number;

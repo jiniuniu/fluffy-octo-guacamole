@@ -4,6 +4,7 @@
 import { useRef, useEffect, useState } from "react";
 import { CompactActionButtons } from "./CompactActionButtons";
 import { PhysicsInfoOverlay } from "./PhysicsInfoOverlay";
+import { AudioPlayer } from "./AudioPlayer";
 import { GenerationRecord } from "@/lib/types";
 
 interface SVGPreviewProps {
@@ -98,10 +99,21 @@ export function SVGPreview({
 
   return (
     <div className={`w-full relative ${className}`}>
-      <div
-        ref={containerRef}
-        className="bg-white border border-gray-200 rounded-lg p-8 flex items-center justify-center min-h-[320px] w-full overflow-hidden relative"
-      />
+      {/* SVG容器 - 相对定位，为音频播放器提供定位基准 */}
+      <div className="relative bg-white border border-gray-200 rounded-lg overflow-hidden">
+        {/* SVG内容区域 */}
+        <div
+          ref={containerRef}
+          className="p-8 flex items-center justify-center min-h-[320px] w-full"
+        />
+
+        {/* 音频播放器 - 绝对定位覆盖在SVG上层 */}
+        {record && record.audio_url && (
+          <div className="absolute bottom-20 left-10 right-10 z-10">
+            <AudioPlayer record={record} />
+          </div>
+        )}
+      </div>
 
       {/* 右上角操作按钮组 */}
       {record && record.status === "success" && (

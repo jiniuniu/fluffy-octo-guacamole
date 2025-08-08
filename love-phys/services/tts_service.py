@@ -21,7 +21,7 @@ class TTSService:
 
         # TTS配置
         self.api_url = "https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation"
-        self.model = "qwen-tts"
+        self.model = "qwen-tts-2025-05-22"
         self.voice = "Cherry"  # 可配置的声音类型
 
     async def generate_audio(self, text: str, voice: Optional[str] = None) -> str:
