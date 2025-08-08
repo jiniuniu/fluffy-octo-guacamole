@@ -5,6 +5,26 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Settings,
+  Copy,
+  FileText,
+  ExternalLink,
+  Download,
+  FileJson,
+  Trash2,
+  Bot,
+  CheckCircle,
+  Calendar,
+  Hash,
+} from "lucide-react";
 import { SVGPreview } from "./SVGPreview";
 import { useAppStore, useAppActions } from "@/lib/store";
 import { GenerationRecord } from "@/lib/types";
@@ -61,11 +81,6 @@ export function ContentViewer({ record }: ContentViewerProps) {
     await actions.generateFull(record.question, record.model);
   };
 
-  const handleRegenerateBasedOn = async () => {
-    actions.clearError();
-    await actions.generateFull(record.question, record.model);
-  };
-
   // 失败状态显示
   if (record.status === "failed") {
     return (
@@ -82,7 +97,8 @@ export function ContentViewer({ record }: ContentViewerProps) {
 
           <div className="space-y-2">
             <Button onClick={handleRetry} size="sm" className="w-full">
-              🔄 重新生成
+              <Copy className="w-4 h-4 mr-2" />
+              重新生成
             </Button>
             <Button
               variant="outline"
@@ -90,7 +106,8 @@ export function ContentViewer({ record }: ContentViewerProps) {
               onClick={handleCopyQuestion}
               className="w-full"
             >
-              📋 复制问题
+              <Copy className="w-4 h-4 mr-2" />
+              复制问题
             </Button>
           </div>
         </div>
@@ -131,98 +148,106 @@ export function ContentViewer({ record }: ContentViewerProps) {
       )}
 
       {/* 头部信息 */}
-      <div className="sticky top-0 bg-white border-b border-gray-200 p-6 z-10">
-        <div className="flex items-start justify-between mb-4">
+      <div className="sticky top-0 bg-white border-b border-gray-200 p-6 pb-4 z-10">
+        <div className="flex items-start justify-between mb-3">
           <div className="flex-1 pr-4">
             <h2 className="text-lg font-semibold text-gray-900 mb-2">
-              📋 {record.question}
+              {record.question}
             </h2>
             <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500">
-              <span>
-                🤖{" "}
+              <span className="flex items-center gap-1">
+                <Bot className="w-4 h-4" />
                 {record.model === "claude"
                   ? "Claude Sonnet 4"
                   : "Qwen Coder Plus"}
               </span>
-              <span>✅ 成功</span>
-              <span>📅 {getTimeDisplay(record.created_at)}</span>
-              <span className="font-mono">ID: {record.id.slice(0, 8)}</span>
+              <span className="flex items-center gap-1">
+                <CheckCircle className="w-4 h-4" />
+                成功
+              </span>
+              <span className="flex items-center gap-1">
+                <Calendar className="w-4 h-4" />
+                {getTimeDisplay(record.created_at)}
+              </span>
+              <span className="flex items-center gap-1 font-mono">
+                <Hash className="w-4 h-4" />
+                {record.id.slice(0, 8)}
+              </span>
             </div>
           </div>
 
-          <div className="flex gap-2 flex-wrap">
-            <Button variant="outline" size="sm" onClick={handleCopyQuestion}>
-              📋 复制问题
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handleExport("json")}
-              disabled={isExporting}
-            >
-              📄 导出JSON
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handleExport("svg")}
-              disabled={isExporting}
-            >
-              🎨 导出SVG
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleDelete}
-              className="text-red-600 hover:text-red-700"
-            >
-              🗑️ 删除
-            </Button>
-          </div>
+          {/* 操作下拉菜单 */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" disabled={isExporting}>
+                <Settings className="w-4 h-4 mr-2" />
+                操作
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem onClick={handleCopyQuestion}>
+                <Copy className="w-4 h-4 mr-2" />
+                复制问题
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleCopyText}>
+                <FileText className="w-4 h-4 mr-2" />
+                复制解释文本
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={() => window.open(`/history/${record.id}`, "_blank")}
+              >
+                <ExternalLink className="w-4 h-4 mr-2" />
+                在新页面打开
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => handleExport("json")}>
+                <FileJson className="w-4 h-4 mr-2" />
+                导出JSON格式
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExport("svg")}>
+                <Download className="w-4 h-4 mr-2" />
+                导出SVG文件
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={handleDelete}
+                className="text-red-600 focus:text-red-600"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                删除记录
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
-      <div className="p-6 space-y-8">
-        {/* 快速操作 */}
-        <div className="bg-blue-50 rounded-lg p-4">
-          <h3 className="text-sm font-medium text-gray-900 mb-3">
-            🔄 快速操作
-          </h3>
-          <div className="flex flex-wrap gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleRegenerateBasedOn}
-            >
-              基于此问题重新生成
-            </Button>
-            <Button variant="outline" size="sm" onClick={handleCopyQuestion}>
-              复制问题到新生成
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => window.open(`/history/${record.id}`, "_blank")}
-            >
-              在新页面打开
-            </Button>
+      <div className="space-y-8">
+        {/* SVG动画 - 移到上方 */}
+        <div className="px-6 mt-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-base font-semibold text-gray-900">
+              🎨 SVG动画预览
+            </h3>
+            <span className="text-xs text-gray-500">
+              {(record.svg_code.length / 1024).toFixed(1)} KB
+            </span>
           </div>
+
+          <SVGPreview svgCode={record.svg_code} className="w-full" />
         </div>
 
-        {/* 物理解释 */}
-        <div>
+        <Separator className="mx-6" />
+
+        {/* 物理解释 - 移到下方 */}
+        <div className="px-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-base font-semibold text-gray-900">
               📝 物理解释
             </h3>
-            <div className="flex gap-2">
-              <Button variant="ghost" size="sm" onClick={handleCopyText}>
-                📋 复制文本
-              </Button>
-              <span className="text-xs text-gray-500 self-center">
-                {record.explanation.length} 字符
-              </span>
-            </div>
+            <span className="text-xs text-gray-500">
+              {record.explanation.length} 字符
+            </span>
           </div>
 
           <div className="bg-gray-50 rounded-lg p-4 border">
@@ -234,34 +259,8 @@ export function ContentViewer({ record }: ContentViewerProps) {
           </div>
         </div>
 
-        <Separator />
-
-        {/* SVG动画 */}
-        <div>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-base font-semibold text-gray-900">
-              🎨 SVG动画预览
-            </h3>
-            <div className="flex gap-2">
-              <span className="text-xs text-gray-500 self-center">
-                {(record.svg_code.length / 1024).toFixed(1)} KB
-              </span>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => handleExport("svg")}
-                disabled={isExporting}
-              >
-                💾 下载SVG文件
-              </Button>
-            </div>
-          </div>
-
-          <SVGPreview svgCode={record.svg_code} className="w-full" />
-        </div>
-
         {/* 技术信息 */}
-        <div className="bg-gray-50 rounded-lg p-4">
+        <div className="bg-gray-50 rounded-lg p-4 mx-6 mb-6">
           <h3 className="text-sm font-medium text-gray-900 mb-3">
             📊 技术信息
           </h3>

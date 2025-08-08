@@ -316,7 +316,7 @@ async def export_json(
             raise HTTPException(status_code=404, detail="历史记录未找到")
 
         return Response(
-            content=result.model_dump_json(indent=2, ensure_ascii=False),
+            content=result.model_dump_json(indent=2),
             media_type="application/json",
             headers={
                 "Content-Disposition": f"attachment; filename=physics_record_{history_id}.json"

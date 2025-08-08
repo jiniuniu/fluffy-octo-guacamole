@@ -4,9 +4,29 @@
 import { useAppStore } from "@/lib/store";
 import { ContentViewer } from "./ContentViewer";
 import { Button } from "@/components/ui/button";
+import { useState, useEffect } from "react";
 
 export function RightPanel() {
   const store = useAppStore();
+  const [elapsedTime, setElapsedTime] = useState(0);
+
+  // 生成开始时重置计时器
+  useEffect(() => {
+    if (store.isGenerating) {
+      setElapsedTime(0);
+      const timer = setInterval(() => {
+        setElapsedTime((prev) => prev + 1);
+      }, 1000);
+
+      return () => clearInterval(timer);
+    }
+  }, [store.isGenerating]);
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
+  };
 
   // 生成中状态
   if (store.isGenerating) {
@@ -21,18 +41,18 @@ export function RightPanel() {
             <p className="text-gray-600 mb-4">{store.currentStep}</p>
           </div>
 
-          <div className="w-full bg-gray-200 rounded-full h-2 mb-4">
-            <div
-              className="bg-blue-500 h-2 rounded-full transition-all duration-300"
-              style={{ width: `${store.progress}%` }}
-            ></div>
+          <div className="space-y-3">
+            <div className="text-2xl font-mono text-blue-600">
+              {formatTime(elapsedTime)}
+            </div>
+            <p className="text-sm text-gray-500">预计需要 1-2 分钟</p>
           </div>
 
-          <p className="text-sm text-gray-500 mb-6">{store.progress}% 完成</p>
-
-          <Button variant="outline" size="sm">
-            取消生成
-          </Button>
+          <div className="mt-6">
+            <Button variant="outline" size="sm">
+              取消生成
+            </Button>
+          </div>
         </div>
       </div>
     );
