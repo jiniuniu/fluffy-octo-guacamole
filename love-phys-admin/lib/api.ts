@@ -1,3 +1,4 @@
+// lib/api.ts
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
 export class ApiError extends Error {
@@ -71,6 +72,25 @@ export const generationApi = {
     return apiRequest<{ svgCode: string }>("/generate/animation", {
       method: "POST",
       body: JSON.stringify(data),
+    });
+  },
+
+  // 修改SVG动画
+  async modifySvg(data: {
+    history_id: string;
+    feedback: string;
+    model: string;
+  }) {
+    return apiRequest<{
+      message: string;
+      svg_code: string;
+      timestamp: string;
+    }>(`/history/${data.history_id}/modify`, {
+      method: "POST",
+      body: JSON.stringify({
+        feedback: data.feedback,
+        model: data.model,
+      }),
     });
   },
 };

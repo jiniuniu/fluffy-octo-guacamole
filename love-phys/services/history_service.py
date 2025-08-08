@@ -46,6 +46,7 @@ class HistoryService:
                 "created_at": now,
                 "updated_at": now,
                 "metadata": create_data.metadata or {},
+                "modification_history": [],  # 初始化修改历史
             }
 
             await self.collection.insert_one(history_data)
@@ -78,6 +79,9 @@ class HistoryService:
             if result:
                 # 移除MongoDB的_id字段
                 result.pop("_id", None)
+                # 确保modification_history字段存在
+                if "modification_history" not in result:
+                    result["modification_history"] = []
                 return GenerationHistory(**result)
             return None
 
@@ -141,6 +145,9 @@ class HistoryService:
             # 转换为响应模型
             items = []
             for result in results:
+                # 确保modification_history字段存在
+                if "modification_history" not in result:
+                    result["modification_history"] = []
                 items.append(GenerationHistoryResponse(**result))
 
             # 计算总页数
@@ -302,7 +309,14 @@ class HistoryService:
 
             results = await cursor.to_list(length=limit)
 
-            return [GenerationHistoryResponse(**result) for result in results]
+            response_list = []
+            for result in results:
+                # 确保modification_history字段存在
+                if "modification_history" not in result:
+                    result["modification_history"] = []
+                response_list.append(GenerationHistoryResponse(**result))
+
+            return response_list
 
         except Exception as e:
             logger.error(f"获取最近历史记录失败: {e}")
@@ -343,17 +357,14 @@ class HistoryService:
                 "model": model,
             }
 
-            # 更新数据
-            update_data = {
-                "svg_code": new_svg,
-                "updated_at": now,
-                "$push": {"modification_history": modification_record},
-            }
-
+            # 修复：正确的MongoDB更新语法
             result = await self.collection.update_one(
                 {"id": history_id},
                 {
-                    "$set": update_data,
+                    "$set": {
+                        "svg_code": new_svg,
+                        "updated_at": now,
+                    },
                     "$push": {"modification_history": modification_record},
                 },
             )

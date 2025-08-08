@@ -1,7 +1,7 @@
 // components/ContentViewer.tsx
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -35,8 +35,14 @@ interface ContentViewerProps {
 
 export function ContentViewer({ record }: ContentViewerProps) {
   const [isExporting, setIsExporting] = useState(false);
+  const [currentRecord, setCurrentRecord] = useState(record);
   const store = useAppStore();
   const actions = useAppActions();
+
+  // 当传入的record发生变化时，更新内部状态
+  useEffect(() => {
+    setCurrentRecord(record);
+  }, [record]);
 
   const getTimeDisplay = (dateString: string) => {
     const date = new Date(dateString);
@@ -45,7 +51,7 @@ export function ContentViewer({ record }: ContentViewerProps) {
 
   const handleCopyText = async () => {
     try {
-      await navigator.clipboard.writeText(record.explanation);
+      await navigator.clipboard.writeText(currentRecord.explanation);
       // TODO: 添加成功提示
     } catch (err) {
       console.error("复制失败:", err);
@@ -54,7 +60,7 @@ export function ContentViewer({ record }: ContentViewerProps) {
 
   const handleCopyQuestion = async () => {
     try {
-      await navigator.clipboard.writeText(record.question);
+      await navigator.clipboard.writeText(currentRecord.question);
       // TODO: 添加成功提示
     } catch (err) {
       console.error("复制失败:", err);
@@ -64,7 +70,7 @@ export function ContentViewer({ record }: ContentViewerProps) {
   const handleExport = async (format: "svg" | "json") => {
     setIsExporting(true);
     try {
-      await actions.exportRecord(record.id, format);
+      await actions.exportRecord(currentRecord.id, format);
     } finally {
       setIsExporting(false);
     }
@@ -72,17 +78,29 @@ export function ContentViewer({ record }: ContentViewerProps) {
 
   const handleDelete = async () => {
     if (confirm("确定要删除这条记录吗？")) {
-      await actions.deleteRecord(record.id);
+      await actions.deleteRecord(currentRecord.id);
     }
   };
 
   const handleRetry = async () => {
     actions.clearError();
-    await actions.generateFull(record.question, record.model);
+    await actions.generateFull(currentRecord.question, currentRecord.model);
+  };
+
+  // 处理SVG修改完成后的更新
+  const handleSvgModified = (newSvgCode: string) => {
+    // 更新本地状态
+    setCurrentRecord((prev) => ({
+      ...prev,
+      svg_code: newSvgCode,
+    }));
+
+    // 更新全局状态
+    actions.updateRecordSvg(currentRecord.id, newSvgCode);
   };
 
   // 失败状态显示
-  if (record.status === "failed") {
+  if (currentRecord.status === "failed") {
     return (
       <div className="h-full bg-white p-8 flex items-center justify-center">
         <div className="text-center max-w-md">
@@ -90,9 +108,11 @@ export function ContentViewer({ record }: ContentViewerProps) {
             <span className="text-4xl">❌</span>
           </div>
           <h3 className="text-lg font-semibold text-gray-900 mb-2">生成失败</h3>
-          <p className="text-gray-600 mb-2 font-medium">{record.question}</p>
+          <p className="text-gray-600 mb-2 font-medium">
+            {currentRecord.question}
+          </p>
           <p className="text-sm text-red-600 mb-6">
-            {record.error_message || "未知错误，请重试"}
+            {currentRecord.error_message || "未知错误，请重试"}
           </p>
 
           <div className="space-y-2">
@@ -116,7 +136,7 @@ export function ContentViewer({ record }: ContentViewerProps) {
   }
 
   // 生成中状态
-  if (record.status === "pending") {
+  if (currentRecord.status === "pending") {
     return (
       <div className="h-full bg-white p-8 flex items-center justify-center">
         <div className="text-center max-w-md">
@@ -126,7 +146,7 @@ export function ContentViewer({ record }: ContentViewerProps) {
           <h3 className="text-lg font-semibold text-gray-900 mb-2">
             正在生成中...
           </h3>
-          <p className="text-gray-600 mb-6">{record.question}</p>
+          <p className="text-gray-600 mb-6">{currentRecord.question}</p>
           <Button variant="outline" size="sm">
             取消生成
           </Button>
@@ -147,17 +167,31 @@ export function ContentViewer({ record }: ContentViewerProps) {
         </div>
       )}
 
+      {/* 修改中状态覆盖层 */}
+      {store.isModifying && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md mx-4 text-center">
+            <div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              🔧 正在修改动画...
+            </h3>
+            <p className="text-gray-600 mb-4">{store.currentStep}</p>
+            <div className="text-sm text-gray-500">预计需要 30 秒 - 1 分钟</div>
+          </div>
+        </div>
+      )}
+
       {/* 头部信息 */}
       <div className="sticky top-0 bg-white border-b border-gray-200 p-6 pb-4 z-10">
         <div className="flex items-start justify-between mb-3">
           <div className="flex-1 pr-4">
             <h2 className="text-lg font-semibold text-gray-900 mb-2">
-              {record.question}
+              {currentRecord.question}
             </h2>
             <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500">
               <span className="flex items-center gap-1">
                 <Bot className="w-4 h-4" />
-                {record.model === "claude"
+                {currentRecord.model === "claude"
                   ? "Claude Sonnet 4"
                   : "Qwen Coder Plus"}
               </span>
@@ -167,11 +201,11 @@ export function ContentViewer({ record }: ContentViewerProps) {
               </span>
               <span className="flex items-center gap-1">
                 <Calendar className="w-4 h-4" />
-                {getTimeDisplay(record.created_at)}
+                {getTimeDisplay(currentRecord.created_at)}
               </span>
               <span className="flex items-center gap-1 font-mono">
                 <Hash className="w-4 h-4" />
-                {record.id.slice(0, 8)}
+                {currentRecord.id.slice(0, 8)}
               </span>
             </div>
           </div>
@@ -195,7 +229,9 @@ export function ContentViewer({ record }: ContentViewerProps) {
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
-                onClick={() => window.open(`/history/${record.id}`, "_blank")}
+                onClick={() =>
+                  window.open(`/history/${currentRecord.id}`, "_blank")
+                }
               >
                 <ExternalLink className="w-4 h-4 mr-2" />
                 在新页面打开
@@ -223,18 +259,23 @@ export function ContentViewer({ record }: ContentViewerProps) {
       </div>
 
       <div className="space-y-8">
-        {/* SVG动画 - 移到上方 */}
+        {/* SVG动画 - 移到上方，添加修改功能 */}
         <div className="px-6 mt-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-base font-semibold text-gray-900">
               🎨 SVG动画预览
             </h3>
             <span className="text-xs text-gray-500">
-              {(record.svg_code.length / 1024).toFixed(1)} KB
+              {(currentRecord.svg_code.length / 1024).toFixed(1)} KB
             </span>
           </div>
 
-          <SVGPreview svgCode={record.svg_code} className="w-full" />
+          <SVGPreview
+            svgCode={currentRecord.svg_code}
+            className="w-full"
+            record={currentRecord}
+            onSvgModified={handleSvgModified}
+          />
         </div>
 
         <Separator className="mx-6" />
@@ -246,14 +287,14 @@ export function ContentViewer({ record }: ContentViewerProps) {
               📝 物理解释
             </h3>
             <span className="text-xs text-gray-500">
-              {record.explanation.length} 字符
+              {currentRecord.explanation.length} 字符
             </span>
           </div>
 
           <div className="bg-gray-50 rounded-lg p-4 border">
             <div className="prose prose-sm max-w-none">
               <p className="text-gray-800 leading-relaxed whitespace-pre-line">
-                {record.explanation}
+                {currentRecord.explanation}
               </p>
             </div>
           </div>
@@ -268,7 +309,7 @@ export function ContentViewer({ record }: ContentViewerProps) {
             <div>
               <span className="text-gray-600">生成模型:</span>
               <span className="ml-2 font-medium">
-                {record.model === "claude"
+                {currentRecord.model === "claude"
                   ? "Claude Sonnet 4"
                   : "Qwen Coder Plus"}
               </span>
@@ -276,19 +317,19 @@ export function ContentViewer({ record }: ContentViewerProps) {
             <div>
               <span className="text-gray-600">创建时间:</span>
               <span className="ml-2 font-medium">
-                {getTimeDisplay(record.created_at)}
+                {getTimeDisplay(currentRecord.created_at)}
               </span>
             </div>
             <div>
               <span className="text-gray-600">解释长度:</span>
               <span className="ml-2 font-medium">
-                {record.explanation.length} 字符
+                {currentRecord.explanation.length} 字符
               </span>
             </div>
             <div>
               <span className="text-gray-600">SVG大小:</span>
               <span className="ml-2 font-medium">
-                {(record.svg_code.length / 1024).toFixed(1)} KB
+                {(currentRecord.svg_code.length / 1024).toFixed(1)} KB
               </span>
             </div>
           </div>
