@@ -2,14 +2,15 @@
 "use client";
 
 import { useRef, useEffect, useState } from "react";
-import { SVGModifyDialog } from "./SVGModifyDialog";
+import { CompactActionButtons } from "./CompactActionButtons";
+import { PhysicsInfoOverlay } from "./PhysicsInfoOverlay";
 import { GenerationRecord } from "@/lib/types";
 
 interface SVGPreviewProps {
   svgCode: string;
   className?: string;
-  record?: GenerationRecord; // 新增：传入记录信息用于修改功能
-  onSvgModified?: (newSvgCode: string) => void; // 新增：修改完成的回调
+  record?: GenerationRecord;
+  onSvgModified?: (newSvgCode: string) => void;
 }
 
 export function SVGPreview({
@@ -20,6 +21,9 @@ export function SVGPreview({
 }: SVGPreviewProps) {
   const [error, setError] = useState<string | null>(null);
   const [currentSvgCode, setCurrentSvgCode] = useState(svgCode);
+  const [overlayType, setOverlayType] = useState<
+    "explanation" | "tech-info" | null
+  >(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // 当外部svgCode变化时，更新内部状态
@@ -69,7 +73,7 @@ export function SVGPreview({
   if (error) {
     return (
       <div
-        className={`flex items-center justify-center bg-red-50 border border-red-200 rounded-lg p-8 ${className}`}
+        className={`flex items-center justify-center bg-red-50 border border-red-200 rounded-lg p-6 ${className}`}
       >
         <div className="text-center">
           <span className="text-2xl mb-2 block">⚠️</span>
@@ -82,7 +86,7 @@ export function SVGPreview({
   if (!currentSvgCode) {
     return (
       <div
-        className={`flex items-center justify-center bg-gray-50 border border-gray-200 rounded-lg p-8 ${className}`}
+        className={`flex items-center justify-center bg-gray-50 border border-gray-200 rounded-lg p-6 ${className}`}
       >
         <div className="text-center text-gray-500">
           <span className="text-2xl mb-2 block">🎨</span>
@@ -96,12 +100,27 @@ export function SVGPreview({
     <div className={`w-full relative ${className}`}>
       <div
         ref={containerRef}
-        className="bg-white border border-gray-200 rounded-lg p-6 flex items-center justify-center min-h-[300px] w-full overflow-hidden relative"
+        className="bg-white border border-gray-200 rounded-lg p-8 flex items-center justify-center min-h-[320px] w-full overflow-hidden relative"
       />
 
-      {/* Fix Me 按钮 - 只在有记录且状态为成功时显示 */}
+      {/* 右上角操作按钮组 */}
       {record && record.status === "success" && (
-        <SVGModifyDialog record={record} onModified={handleSvgModified} />
+        <CompactActionButtons
+          record={record}
+          onShowExplanation={() => setOverlayType("explanation")}
+          onShowTechInfo={() => setOverlayType("tech-info")}
+          onSvgModified={handleSvgModified}
+        />
+      )}
+
+      {/* 信息覆盖层 - 弹窗样式 */}
+      {record && overlayType && (
+        <PhysicsInfoOverlay
+          record={record}
+          type={overlayType}
+          isOpen={true}
+          onClose={() => setOverlayType(null)}
+        />
       )}
     </div>
   );

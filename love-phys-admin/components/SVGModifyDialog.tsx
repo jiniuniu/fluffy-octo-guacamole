@@ -1,7 +1,7 @@
 // components/SVGModifyDialog.tsx
 "use client";
 
-import { useState } from "react";
+import { useState, ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -13,16 +13,20 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Wrench } from "lucide-react";
 import { useAppActions } from "@/lib/store";
 import { GenerationRecord } from "@/lib/types";
 
 interface SVGModifyDialogProps {
   record: GenerationRecord;
   onModified?: (newSvgCode: string) => void;
+  children?: ReactNode; // 支持自定义触发器
 }
 
-export function SVGModifyDialog({ record, onModified }: SVGModifyDialogProps) {
+export function SVGModifyDialog({
+  record,
+  onModified,
+  children,
+}: SVGModifyDialogProps) {
   const [open, setOpen] = useState(false);
   const [feedback, setFeedback] = useState("");
   const [selectedModel, setSelectedModel] = useState<"claude" | "qwen">(
@@ -70,14 +74,15 @@ export function SVGModifyDialog({ record, onModified }: SVGModifyDialogProps) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button
-          variant="outline"
-          size="sm"
-          className="absolute top-2 right-2 z-10 bg-white/90 hover:bg-white shadow-sm"
-        >
-          <Wrench className="w-4 h-4 mr-1" />
-          Fix Me
-        </Button>
+        {children || (
+          <Button
+            variant="outline"
+            size="sm"
+            className="absolute top-2 right-2 z-10 bg-white/90 hover:bg-white shadow-sm"
+          >
+            🔧 Fix Me
+          </Button>
+        )}
       </DialogTrigger>
 
       <DialogContent className="sm:max-w-md">

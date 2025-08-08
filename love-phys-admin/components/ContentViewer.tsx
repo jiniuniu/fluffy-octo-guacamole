@@ -1,9 +1,8 @@
 // components/ContentViewer.tsx
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   DropdownMenu,
@@ -15,7 +14,6 @@ import {
 import {
   Settings,
   Copy,
-  FileText,
   ExternalLink,
   Download,
   FileJson,
@@ -213,9 +211,8 @@ export function ContentViewer({ record }: ContentViewerProps) {
           {/* 操作下拉菜单 */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" disabled={isExporting}>
-                <Settings className="w-4 h-4 mr-2" />
-                操作
+              <Button variant="outline" size="lg" disabled={isExporting}>
+                <Settings className="w-10 h-10" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
@@ -224,7 +221,7 @@ export function ContentViewer({ record }: ContentViewerProps) {
                 复制问题
               </DropdownMenuItem>
               <DropdownMenuItem onClick={handleCopyText}>
-                <FileText className="w-4 h-4 mr-2" />
+                <Copy className="w-4 h-4 mr-2" />
                 复制解释文本
               </DropdownMenuItem>
               <DropdownMenuSeparator />
@@ -258,82 +255,14 @@ export function ContentViewer({ record }: ContentViewerProps) {
         </div>
       </div>
 
-      <div className="space-y-8">
-        {/* SVG动画 - 移到上方，添加修改功能 */}
-        <div className="px-6 mt-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-base font-semibold text-gray-900">
-              🎨 SVG动画预览
-            </h3>
-            <span className="text-xs text-gray-500">
-              {(currentRecord.svg_code.length / 1024).toFixed(1)} KB
-            </span>
-          </div>
-
-          <SVGPreview
-            svgCode={currentRecord.svg_code}
-            className="w-full"
-            record={currentRecord}
-            onSvgModified={handleSvgModified}
-          />
-        </div>
-
-        <Separator className="mx-6" />
-
-        {/* 物理解释 - 移到下方 */}
-        <div className="px-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-base font-semibold text-gray-900">
-              📝 物理解释
-            </h3>
-            <span className="text-xs text-gray-500">
-              {currentRecord.explanation.length} 字符
-            </span>
-          </div>
-
-          <div className="bg-gray-50 rounded-lg p-4 border">
-            <div className="prose prose-sm max-w-none">
-              <p className="text-gray-800 leading-relaxed whitespace-pre-line">
-                {currentRecord.explanation}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* 技术信息 */}
-        <div className="bg-gray-50 rounded-lg p-4 mx-6 mb-6">
-          <h3 className="text-sm font-medium text-gray-900 mb-3">
-            📊 技术信息
-          </h3>
-          <div className="grid grid-cols-2 gap-4 text-sm">
-            <div>
-              <span className="text-gray-600">生成模型:</span>
-              <span className="ml-2 font-medium">
-                {currentRecord.model === "claude"
-                  ? "Claude Sonnet 4"
-                  : "Qwen Coder Plus"}
-              </span>
-            </div>
-            <div>
-              <span className="text-gray-600">创建时间:</span>
-              <span className="ml-2 font-medium">
-                {getTimeDisplay(currentRecord.created_at)}
-              </span>
-            </div>
-            <div>
-              <span className="text-gray-600">解释长度:</span>
-              <span className="ml-2 font-medium">
-                {currentRecord.explanation.length} 字符
-              </span>
-            </div>
-            <div>
-              <span className="text-gray-600">SVG大小:</span>
-              <span className="ml-2 font-medium">
-                {(currentRecord.svg_code.length / 1024).toFixed(1)} KB
-              </span>
-            </div>
-          </div>
-        </div>
+      {/* 主要内容 - 只显示SVG动画 */}
+      <div className="p-6">
+        <SVGPreview
+          svgCode={currentRecord.svg_code}
+          className="w-full"
+          record={currentRecord}
+          onSvgModified={handleSvgModified}
+        />
       </div>
     </div>
   );
