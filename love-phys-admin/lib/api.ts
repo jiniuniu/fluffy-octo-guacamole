@@ -1,4 +1,11 @@
 // lib/api.ts
+import {
+  GenerateRequest,
+  ModifyRequest,
+  PaginationParams,
+  GenerationRecord,
+} from "./types";
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
 export class ApiError extends Error {
@@ -38,10 +45,10 @@ async function apiRequest<T>(
   return response.json();
 }
 
-// 生成相关API
+// 生成相关API - 只保留使用的接口
 export const generationApi = {
   // 生成完整内容
-  async generateFull(data: { question: string; model: string }) {
+  async generateFull(data: GenerateRequest) {
     return apiRequest<{
       id: string;
       question: string;
@@ -55,32 +62,8 @@ export const generationApi = {
     });
   },
 
-  // 仅生成内容
-  async generateContent(data: { question: string; model: string }) {
-    return apiRequest<{ explanation: string }>("/generate/content", {
-      method: "POST",
-      body: JSON.stringify(data),
-    });
-  },
-
-  // 仅生成动画
-  async generateAnimation(data: {
-    question: string;
-    explanation: string;
-    model: string;
-  }) {
-    return apiRequest<{ svgCode: string }>("/generate/animation", {
-      method: "POST",
-      body: JSON.stringify(data),
-    });
-  },
-
   // 修改SVG动画
-  async modifySvg(data: {
-    history_id: string;
-    feedback: string;
-    model: string;
-  }) {
+  async modifySvg(data: ModifyRequest) {
     return apiRequest<{
       message: string;
       svg_code: string;
@@ -98,13 +81,7 @@ export const generationApi = {
 // 历史记录API
 export const historyApi = {
   // 获取历史记录列表
-  async getHistory(params?: {
-    page?: number;
-    page_size?: number;
-    keyword?: string;
-    model?: string;
-    status?: string;
-  }) {
+  async getHistory(params?: PaginationParams) {
     const searchParams = new URLSearchParams();
     if (params) {
       Object.entries(params).forEach(([key, value]) => {
@@ -123,8 +100,7 @@ export const historyApi = {
         model: string;
         status: string;
         created_at: string;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        metadata?: any;
+        error_message?: string;
       }>;
       total: number;
       page: number;
@@ -135,31 +111,13 @@ export const historyApi = {
 
   // 根据ID获取历史记录
   async getById(id: string) {
-    return apiRequest<{
-      id: string;
-      question: string;
-      explanation: string;
-      svg_code: string;
-      model: string;
-      status: string;
-      created_at: string;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      metadata?: any;
-    }>(`/history/${id}`);
+    return apiRequest<GenerationRecord>(`/history/${id}`);
   },
 
   // 删除历史记录
   async deleteById(id: string) {
     return apiRequest(`/history/${id}`, {
       method: "DELETE",
-    });
-  },
-
-  // 批量删除
-  async batchDelete(ids: string[]) {
-    return apiRequest("/history/batch", {
-      method: "DELETE",
-      body: JSON.stringify(ids),
     });
   },
 
@@ -179,25 +137,5 @@ export const historyApi = {
       throw new ApiError(response.status, "Export failed");
     }
     return response.blob();
-  },
-};
-
-// 统计API
-export const statsApi = {
-  async getSummary() {
-    return apiRequest<{
-      total_generations: number;
-      successful_generations: number;
-      failed_generations: number;
-      by_model: Array<{
-        model: string;
-        count: number;
-        latest_generation?: string;
-      }>;
-      recent_activity: Array<{
-        date: string;
-        count: number;
-      }>;
-    }>("/stats/summary");
   },
 };

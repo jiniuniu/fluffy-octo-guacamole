@@ -1,33 +1,29 @@
 // lib/store.ts
 import { create } from "zustand";
-import { GenerationRecord } from "./types";
+import { GenerationRecord, AsyncOperation } from "./types";
 import { generationApi, historyApi } from "./api";
 
 interface AppStore {
-  // State
-  isGenerating: boolean;
-  isModifying: boolean; // 新增：修改状态
-  progress: number;
-  currentStep: string;
+  // 异步操作状态 - 统一管理
+  asyncOperation: AsyncOperation;
+
+  // 数据状态
   selectedRecord: GenerationRecord | null;
   recentRecords: GenerationRecord[];
   error: string | null;
 
-  // Pagination
+  // 分页状态
   currentPage: number;
   totalPages: number;
   totalRecords: number;
 
-  // Search
+  // 筛选状态
   searchQuery: string;
   modelFilter: string;
   statusFilter: string;
 
-  // Actions
-  setGenerating: (isGenerating: boolean) => void;
-  setModifying: (isModifying: boolean) => void; // 新增
-  setProgress: (progress: number) => void;
-  setCurrentStep: (step: string) => void;
+  // 基础操作
+  setAsyncOperation: (operation: Partial<AsyncOperation>) => void;
   setSelectedRecord: (record: GenerationRecord | null) => void;
   setRecentRecords: (records: GenerationRecord[]) => void;
   setError: (error: string | null) => void;
@@ -35,7 +31,7 @@ interface AppStore {
   setModelFilter: (model: string) => void;
   setStatusFilter: (status: string) => void;
 
-  // API Actions
+  // 业务操作
   generateFull: (question: string, model: "claude" | "qwen") => Promise<void>;
   modifySvg: (
     history_id: string,
@@ -47,18 +43,21 @@ interface AppStore {
   deleteRecord: (id: string) => Promise<void>;
   exportRecord: (id: string, format: "svg" | "json") => Promise<void>;
 
-  // Utility
+  // 工具方法
   addRecord: (record: GenerationRecord) => void;
-  updateRecordSvg: (id: string, newSvgCode: string) => void; // 新增
+  updateRecordSvg: (id: string, newSvgCode: string) => void;
   clearError: () => void;
+  resetAsyncOperation: () => void;
 }
 
 export const useAppStore = create<AppStore>((set, get) => ({
-  // Initial state
-  isGenerating: false,
-  isModifying: false, // 新增
-  progress: 0,
-  currentStep: "",
+  // 初始状态
+  asyncOperation: {
+    isLoading: false,
+    type: null,
+    progress: 0,
+    currentStep: "",
+  },
   selectedRecord: null,
   recentRecords: [],
   error: null,
@@ -69,11 +68,11 @@ export const useAppStore = create<AppStore>((set, get) => ({
   modelFilter: "all",
   statusFilter: "all",
 
-  // Basic setters
-  setGenerating: (isGenerating) => set({ isGenerating }),
-  setModifying: (isModifying) => set({ isModifying }), // 新增
-  setProgress: (progress) => set({ progress }),
-  setCurrentStep: (currentStep) => set({ currentStep }),
+  // 基础setters
+  setAsyncOperation: (operation) =>
+    set((state) => ({
+      asyncOperation: { ...state.asyncOperation, ...operation },
+    })),
   setSelectedRecord: (selectedRecord) => set({ selectedRecord }),
   setRecentRecords: (recentRecords) => set({ recentRecords }),
   setError: (error) => set({ error }),
@@ -81,28 +80,31 @@ export const useAppStore = create<AppStore>((set, get) => ({
   setModelFilter: (model) => set({ modelFilter: model }),
   setStatusFilter: (status) => set({ statusFilter: status }),
 
-  // Generate full content with real API
+  // 生成完整内容
   generateFull: async (question: string, model: "claude" | "qwen") => {
+    const { setAsyncOperation, addRecord, resetAsyncOperation } = get();
+
     try {
-      set({
-        isGenerating: true,
+      setAsyncOperation({
+        isLoading: true,
+        type: "generating",
         progress: 0,
         currentStep: "📝 正在生成物理解释...",
-        error: null,
       });
+      set({ error: null });
 
       // 模拟进度更新
       const progressInterval = setInterval(() => {
-        const current = get().progress;
+        const current = get().asyncOperation.progress;
         if (current < 90) {
-          set({ progress: current + Math.random() * 15 });
+          setAsyncOperation({ progress: current + Math.random() * 15 });
         }
       }, 500);
 
       const result = await generationApi.generateFull({ question, model });
 
       clearInterval(progressInterval);
-      set({
+      setAsyncOperation({
         progress: 100,
         currentStep: "✅ 生成完成!",
       });
@@ -118,47 +120,44 @@ export const useAppStore = create<AppStore>((set, get) => ({
         created_at: result.created_at,
       };
 
-      // 添加到记录并选中
-      get().addRecord(newRecord);
+      // 添加记录并选中
+      addRecord(newRecord);
       set({ selectedRecord: newRecord });
 
       setTimeout(() => {
-        set({
-          isGenerating: false,
-          progress: 0,
-          currentStep: "",
-        });
+        resetAsyncOperation();
       }, 1000);
     } catch (error) {
       console.error("Generation failed:", error);
       set({
-        isGenerating: false,
-        progress: 0,
-        currentStep: "",
         error: error instanceof Error ? error.message : "生成失败，请重试",
       });
+      resetAsyncOperation();
     }
   },
 
-  // 新增：修改SVG
+  // 修改SVG
   modifySvg: async (
     history_id: string,
     feedback: string,
     model: "claude" | "qwen"
   ) => {
+    const { setAsyncOperation, updateRecordSvg, resetAsyncOperation } = get();
+
     try {
-      set({
-        isModifying: true,
+      setAsyncOperation({
+        isLoading: true,
+        type: "modifying",
         progress: 0,
         currentStep: "🔧 正在修改动画...",
-        error: null,
       });
+      set({ error: null });
 
       // 模拟进度更新
       const progressInterval = setInterval(() => {
-        const current = get().progress;
+        const current = get().asyncOperation.progress;
         if (current < 90) {
-          set({ progress: current + Math.random() * 20 });
+          setAsyncOperation({ progress: current + Math.random() * 20 });
         }
       }, 300);
 
@@ -169,42 +168,42 @@ export const useAppStore = create<AppStore>((set, get) => ({
       });
 
       clearInterval(progressInterval);
-      set({
+      setAsyncOperation({
         progress: 100,
         currentStep: "✅ 修改完成!",
       });
 
-      // 更新选中记录的SVG
-      get().updateRecordSvg(history_id, result.svg_code);
+      // 更新SVG
+      updateRecordSvg(history_id, result.svg_code);
 
       setTimeout(() => {
-        set({
-          isModifying: false,
-          progress: 0,
-          currentStep: "",
-        });
+        resetAsyncOperation();
       }, 1000);
 
       return { svg_code: result.svg_code };
     } catch (error) {
       console.error("SVG modification failed:", error);
       set({
-        isModifying: false,
-        progress: 0,
-        currentStep: "",
         error: error instanceof Error ? error.message : "修改失败，请重试",
       });
+      resetAsyncOperation();
       throw error;
     }
   },
 
-  // Load history with pagination and filters
+  // 加载历史记录
   loadHistory: async (page = 1) => {
+    const { searchQuery, modelFilter, statusFilter, setAsyncOperation } = get();
+
     try {
-      const { searchQuery, modelFilter, statusFilter } = get();
+      setAsyncOperation({
+        isLoading: true,
+        type: "loading",
+        currentStep: "📚 加载历史记录...",
+      });
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const params: any = {
+      const params: Record<string, any> = {
         page,
         page_size: 20,
       };
@@ -223,6 +222,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
         model: item.model as "claude" | "qwen",
         status: item.status as "pending" | "success" | "failed",
         created_at: item.created_at,
+        error_message: item.error_message,
       }));
 
       set({
@@ -237,26 +237,17 @@ export const useAppStore = create<AppStore>((set, get) => ({
       set({
         error: error instanceof Error ? error.message : "加载历史记录失败",
       });
+    } finally {
+      get().resetAsyncOperation();
     }
   },
 
-  // Load specific record by ID
+  // 加载特定记录
   loadRecordById: async (id: string) => {
     try {
       const result = await historyApi.getById(id);
-
-      const record: GenerationRecord = {
-        id: result.id,
-        question: result.question,
-        explanation: result.explanation,
-        svg_code: result.svg_code,
-        model: result.model as "claude" | "qwen",
-        status: result.status as "pending" | "success" | "failed",
-        created_at: result.created_at,
-      };
-
       set({
-        selectedRecord: record,
+        selectedRecord: result,
         error: null,
       });
     } catch (error) {
@@ -267,12 +258,11 @@ export const useAppStore = create<AppStore>((set, get) => ({
     }
   },
 
-  // Delete record
+  // 删除记录
   deleteRecord: async (id: string) => {
     try {
       await historyApi.deleteById(id);
 
-      // Remove from local state
       const { recentRecords, selectedRecord } = get();
       const updatedRecords = recentRecords.filter((r) => r.id !== id);
 
@@ -289,7 +279,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
     }
   },
 
-  // Export record
+  // 导出记录
   exportRecord: async (id: string, format: "svg" | "json") => {
     try {
       const blob =
@@ -313,13 +303,12 @@ export const useAppStore = create<AppStore>((set, get) => ({
     }
   },
 
-  // Utility functions
+  // 工具方法
   addRecord: (record) =>
     set((state) => ({
       recentRecords: [record, ...state.recentRecords].slice(0, 50),
     })),
 
-  // 新增：更新记录的SVG
   updateRecordSvg: (id: string, newSvgCode: string) =>
     set((state) => ({
       recentRecords: state.recentRecords.map((record) =>
@@ -332,14 +321,24 @@ export const useAppStore = create<AppStore>((set, get) => ({
     })),
 
   clearError: () => set({ error: null }),
+
+  resetAsyncOperation: () =>
+    set({
+      asyncOperation: {
+        isLoading: false,
+        type: null,
+        progress: 0,
+        currentStep: "",
+      },
+    }),
 }));
 
-// 单独导出actions，避免组件中的依赖问题
+// 单独导出actions
 export const useAppActions = () => {
   const store = useAppStore();
   return {
     generateFull: store.generateFull,
-    modifySvg: store.modifySvg, // 新增
+    modifySvg: store.modifySvg,
     loadHistory: store.loadHistory,
     loadRecordById: store.loadRecordById,
     deleteRecord: store.deleteRecord,
@@ -348,7 +347,7 @@ export const useAppActions = () => {
     setModelFilter: store.setModelFilter,
     setStatusFilter: store.setStatusFilter,
     setSelectedRecord: store.setSelectedRecord,
-    updateRecordSvg: store.updateRecordSvg, // 新增
+    updateRecordSvg: store.updateRecordSvg,
     clearError: store.clearError,
   };
 };

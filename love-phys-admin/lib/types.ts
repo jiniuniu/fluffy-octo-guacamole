@@ -1,3 +1,4 @@
+// lib/types.ts
 export interface GenerationRecord {
   id: string;
   question: string;
@@ -9,15 +10,31 @@ export interface GenerationRecord {
   error_message?: string;
 }
 
-export interface GenerationState {
-  isGenerating: boolean;
+// 统一的异步操作状态
+export interface AsyncOperation {
+  isLoading: boolean;
+  type: "generating" | "modifying" | "loading" | null;
   progress: number;
   currentStep: string;
-  selectedRecord: GenerationRecord | null;
-  recentRecords: GenerationRecord[];
 }
 
+// API 请求类型
 export interface GenerateRequest {
   question: string;
   model: "claude" | "qwen";
+}
+
+export interface ModifyRequest {
+  history_id: string;
+  feedback: string;
+  model: "claude" | "qwen";
+}
+
+// 分页参数
+export interface PaginationParams {
+  page?: number;
+  page_size?: number;
+  keyword?: string;
+  model?: string;
+  status?: string;
 }
