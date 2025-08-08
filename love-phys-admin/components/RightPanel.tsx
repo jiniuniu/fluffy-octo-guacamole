@@ -1,14 +1,15 @@
+// components/RightPanel.tsx
 "use client";
 
 import { useAppStore } from "@/lib/store";
 import { ContentViewer } from "./ContentViewer";
-import { Button } from "./ui/button";
+import { Button } from "@/components/ui/button";
 
 export function RightPanel() {
-  const { isGenerating, selectedRecord, progress, currentStep } = useAppStore();
+  const store = useAppStore();
 
   // 生成中状态
-  if (isGenerating) {
+  if (store.isGenerating) {
     return (
       <div className="h-full bg-white flex items-center justify-center p-8">
         <div className="text-center max-w-md">
@@ -17,17 +18,17 @@ export function RightPanel() {
             <h3 className="text-lg font-semibold text-gray-900 mb-2">
               ⏳ 正在生成中...
             </h3>
-            <p className="text-gray-600 mb-4">{currentStep}</p>
+            <p className="text-gray-600 mb-4">{store.currentStep}</p>
           </div>
 
           <div className="w-full bg-gray-200 rounded-full h-2 mb-4">
             <div
               className="bg-blue-500 h-2 rounded-full transition-all duration-300"
-              style={{ width: `${progress}%` }}
+              style={{ width: `${store.progress}%` }}
             ></div>
           </div>
 
-          <p className="text-sm text-gray-500 mb-6">{progress}% 完成</p>
+          <p className="text-sm text-gray-500 mb-6">{store.progress}% 完成</p>
 
           <Button variant="outline" size="sm">
             取消生成
@@ -38,8 +39,8 @@ export function RightPanel() {
   }
 
   // 有选中记录时显示内容
-  if (selectedRecord) {
-    return <ContentViewer record={selectedRecord} />;
+  if (store.selectedRecord) {
+    return <ContentViewer record={store.selectedRecord} />;
   }
 
   // 空状态

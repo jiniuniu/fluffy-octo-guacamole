@@ -1,9 +1,20 @@
+// app/page.tsx
 "use client";
 
+import { useEffect } from "react";
 import { LeftPanel } from "@/components/LeftPanel";
-import { RightPanel } from "@/components/RightPandel";
+import { RightPanel } from "@/components/RightPanel";
+import { useAppActions } from "@/lib/store";
 
 export default function HomePage() {
+  const actions = useAppActions();
+
+  // 页面加载时初始化数据
+  useEffect(() => {
+    actions.loadHistory(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       {/* 顶部导航 */}
@@ -15,7 +26,7 @@ export default function HomePage() {
                 <span className="text-white font-bold text-sm">🧪</span>
               </div>
               <h1 className="text-xl font-semibold text-gray-800">
-                物理动画管理系统
+                Love Phys Admin
               </h1>
             </div>
             <div className="flex items-center gap-4">
