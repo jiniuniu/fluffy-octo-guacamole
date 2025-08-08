@@ -6,8 +6,8 @@ from typing import Any, Dict, List, Optional
 
 from db.models import (
     ActivityStats,
+    AudioStats,
     GenerationHistory,
-    GenerationHistoryCreate,
     GenerationHistoryResponse,
     GenerationStatus,
     HistorySearchRequest,
@@ -22,66 +22,53 @@ logger = logging.getLogger(__name__)
 
 
 class HistoryService:
-    def __init__(
-        self,
-        database: AsyncIOMotorDatabase,
-    ):
-        self.db = database
+    def __init__(self, database: AsyncIOMotorDatabase):
         self.collection = database.generation_history
-
-    async def save_generation(
-        self, create_data: GenerationHistoryCreate
-    ) -> GenerationHistory:
-        """保存生成记录到数据库"""
-        try:
-            now = datetime.now()
-            history_data = {
-                "id": str(uuid.uuid4()),
-                "question": create_data.question,
-                "explanation": create_data.explanation,
-                "svg_code": create_data.svg_code,
-                "model": create_data.model,
-                "status": create_data.status,
-                "error_message": create_data.error_message,
-                "created_at": now,
-                "updated_at": now,
-                "metadata": create_data.metadata or {},
-                "modification_history": [],  # 初始化修改历史
-            }
-
-            await self.collection.insert_one(history_data)
-            logger.info(f"保存历史记录成功: {history_data['id']}")
-
-            return GenerationHistory(**history_data)
-
-        except Exception as e:
-            logger.error(f"保存历史记录失败: {e}")
-            raise
 
     async def create_pending_record(
         self, question: str, model: str, metadata: Optional[Dict[str, Any]] = None
     ) -> GenerationHistory:
         """创建一个pending状态的记录"""
-        create_data = GenerationHistoryCreate(
-            question=question,
-            explanation="",
-            svg_code="",
-            model=model,
-            status=GenerationStatus.PENDING,
-            metadata=metadata,
-        )
-        return await self.save_generation(create_data)
+        try:
+            now = datetime.now()
+            history_data = {
+                "id": str(uuid.uuid4()),
+                "question": question,
+                "explanation": "",
+                "svg_code": "",
+                "model": model,
+                "status": GenerationStatus.PENDING,
+                "error_message": None,
+                "created_at": now,
+                "updated_at": now,
+                "metadata": metadata or {},
+                "modification_history": [],
+                "audio_url": None,
+                "audio_metadata": {},
+            }
+
+            await self.collection.insert_one(history_data)
+            logger.info(f"创建pending记录成功: {history_data['id']}")
+
+            return GenerationHistory(**history_data)
+
+        except Exception as e:
+            logger.error(f"创建pending记录失败: {e}")
+            raise
 
     async def get_by_id(self, history_id: str) -> Optional[GenerationHistory]:
         """根据ID获取历史记录"""
         try:
             result = await self.collection.find_one({"id": history_id})
             if result:
-                # 移除MongoDB的_id字段
                 result.pop("_id", None)
-                # 确保modification_history字段存在
+                # 确保字段存在
                 if "modification_history" not in result:
                     result["modification_history"] = []
+                if "audio_url" not in result:
+                    result["audio_url"] = None
+                if "audio_metadata" not in result:
+                    result["audio_metadata"] = {}
                 return GenerationHistory(**result)
             return None
 
@@ -117,6 +104,16 @@ class HistoryService:
             if search_request.status:
                 query["status"] = search_request.status
 
+            # 音频筛选
+            if search_request.has_audio is not None:
+                if search_request.has_audio:
+                    query["audio_url"] = {"$ne": None, "$exists": True}
+                else:
+                    query["$or"] = [
+                        {"audio_url": None},
+                        {"audio_url": {"$exists": False}},
+                    ]
+
             # 日期范围筛选
             if search_request.start_date or search_request.end_date:
                 date_query = {}
@@ -126,14 +123,12 @@ class HistoryService:
                     date_query["$lte"] = search_request.end_date
                 query["created_at"] = date_query
 
-            # 计算分页参数
+            # 分页计算
             skip = (search_request.page - 1) * search_request.page_size
             limit = search_request.page_size
 
-            # 查询总数
+            # 查询总数和数据
             total = await self.collection.count_documents(query)
-
-            # 查询数据
             cursor = (
                 self.collection.find(query, {"_id": 0})
                 .sort("created_at", DESCENDING)
@@ -145,12 +140,14 @@ class HistoryService:
             # 转换为响应模型
             items = []
             for result in results:
-                # 确保modification_history字段存在
                 if "modification_history" not in result:
                     result["modification_history"] = []
+                if "audio_url" not in result:
+                    result["audio_url"] = None
+                if "audio_metadata" not in result:
+                    result["audio_metadata"] = {}
                 items.append(GenerationHistoryResponse(**result))
 
-            # 计算总页数
             total_pages = (
                 total + search_request.page_size - 1
             ) // search_request.page_size
@@ -167,18 +164,64 @@ class HistoryService:
             logger.error(f"搜索历史记录失败: {e}")
             raise
 
-    async def delete_by_id(self, history_id: str) -> bool:
-        """删除历史记录"""
+    async def get_recent_history(
+        self, limit: int = 10
+    ) -> List[GenerationHistoryResponse]:
+        """获取最近的历史记录"""
         try:
-            result = await self.collection.delete_one({"id": history_id})
-            success = result.deleted_count > 0
+            cursor = (
+                self.collection.find({"status": GenerationStatus.SUCCESS}, {"_id": 0})
+                .sort("created_at", DESCENDING)
+                .limit(limit)
+            )
 
-            if success:
-                logger.info(f"删除历史记录成功: {history_id}")
-            else:
+            results = await cursor.to_list(length=limit)
+            response_list = []
+            for result in results:
+                if "modification_history" not in result:
+                    result["modification_history"] = []
+                if "audio_url" not in result:
+                    result["audio_url"] = None
+                if "audio_metadata" not in result:
+                    result["audio_metadata"] = {}
+                response_list.append(GenerationHistoryResponse(**result))
+
+            return response_list
+
+        except Exception as e:
+            logger.error(f"获取最近历史记录失败: {e}")
+            raise
+
+    async def delete_by_id(self, history_id: str, storage_service=None) -> bool:
+        """删除历史记录和关联的音频文件"""
+        try:
+            # 获取记录信息，检查是否有音频文件
+            record = await self.get_by_id(history_id)
+            if not record:
                 logger.warning(f"历史记录不存在: {history_id}")
+                return False
 
-            return success
+            # 删除数据库记录
+            result = await self.collection.delete_one({"id": history_id})
+            if result.deleted_count == 0:
+                logger.warning(f"数据库记录删除失败: {history_id}")
+                return False
+
+            # 删除关联的音频文件
+            if record.audio_url and storage_service:
+                try:
+                    audio_deleted = await storage_service.delete_audio_file(
+                        record.audio_url
+                    )
+                    if audio_deleted:
+                        logger.info(f"音频文件删除成功: {record.audio_url}")
+                    else:
+                        logger.warning(f"音频文件删除失败: {record.audio_url}")
+                except Exception as audio_error:
+                    logger.error(f"删除音频文件时发生错误: {audio_error}")
+
+            logger.info(f"删除历史记录成功: {history_id}")
+            return True
 
         except Exception as e:
             logger.error(f"删除历史记录失败: {e}")
@@ -191,6 +234,8 @@ class HistoryService:
         svg_code: Optional[str] = None,
         status: Optional[GenerationStatus] = None,
         error_message: Optional[str] = None,
+        audio_url: Optional[str] = None,
+        audio_metadata: Optional[Dict[str, Any]] = None,
     ) -> bool:
         """更新历史记录"""
         try:
@@ -204,6 +249,10 @@ class HistoryService:
                 update_data["status"] = status
             if error_message is not None:
                 update_data["error_message"] = error_message
+            if audio_url is not None:
+                update_data["audio_url"] = audio_url
+            if audio_metadata is not None:
+                update_data["audio_metadata"] = audio_metadata
 
             result = await self.collection.update_one(
                 {"id": history_id}, {"$set": update_data}
@@ -212,12 +261,58 @@ class HistoryService:
             success = result.modified_count > 0
             if success:
                 logger.info(f"更新历史记录成功: {history_id}")
-
             return success
 
         except Exception as e:
             logger.error(f"更新历史记录失败: {e}")
             raise
+
+    async def update_with_modification(
+        self, history_id: str, new_svg: str, feedback: str, model: str
+    ) -> bool:
+        """更新记录：覆盖SVG并添加修改历史"""
+        try:
+            now = datetime.now()
+            modification_record = {
+                "feedback": feedback,
+                "timestamp": now.isoformat(),
+                "model": model,
+            }
+
+            result = await self.collection.update_one(
+                {"id": history_id},
+                {
+                    "$set": {"svg_code": new_svg, "updated_at": now},
+                    "$push": {"modification_history": modification_record},
+                },
+            )
+
+            success = result.modified_count > 0
+            if success:
+                logger.info(f"修改记录更新成功: {history_id}")
+            else:
+                logger.warning(f"修改记录未更新: {history_id}")
+
+            return success
+
+        except Exception as e:
+            logger.error(f"更新修改记录失败: {e}")
+            raise
+
+    async def get_modification_count(self, history_id: str) -> int:
+        """获取记录的修改次数"""
+        try:
+            result = await self.collection.find_one(
+                {"id": history_id}, {"modification_history": 1}
+            )
+
+            if result and "modification_history" in result:
+                return len(result["modification_history"])
+            return 0
+
+        except Exception as e:
+            logger.error(f"获取修改次数失败: {e}")
+            return 0
 
     async def get_stats(self) -> StatsResponse:
         """获取统计信息"""
@@ -283,6 +378,9 @@ class HistoryService:
                     ActivityStats(date=item["_id"], count=item["count"])
                 )
 
+            # 音频统计
+            audio_stats = await self._get_audio_stats()
+
             return StatsResponse(
                 total_generations=total,
                 successful_generations=successful,
@@ -290,108 +388,59 @@ class HistoryService:
                 by_model=by_model,
                 recent_activity=recent_activity,
                 timestamp=datetime.now(),
+                audio_stats=audio_stats,
             )
 
         except Exception as e:
             logger.error(f"获取统计信息失败: {e}")
             raise
 
-    async def get_recent_history(
-        self, limit: int = 10
-    ) -> List[GenerationHistoryResponse]:
-        """获取最近的历史记录"""
+    async def _get_audio_stats(self) -> Optional[AudioStats]:
+        """获取音频相关统计信息"""
         try:
-            cursor = (
-                self.collection.find({"status": GenerationStatus.SUCCESS}, {"_id": 0})
-                .sort("created_at", DESCENDING)
-                .limit(limit)
+            audio_count = await self.collection.count_documents(
+                {"audio_url": {"$ne": None, "$exists": True}}
             )
 
-            results = await cursor.to_list(length=limit)
+            if audio_count == 0:
+                return AudioStats(
+                    total_audio_files=0, total_audio_size=0, by_voice_type=[]
+                )
 
-            response_list = []
-            for result in results:
-                # 确保modification_history字段存在
-                if "modification_history" not in result:
-                    result["modification_history"] = []
-                response_list.append(GenerationHistoryResponse(**result))
-
-            return response_list
-
-        except Exception as e:
-            logger.error(f"获取最近历史记录失败: {e}")
-            raise
-
-    async def bulk_delete(self, history_ids: List[str]) -> int:
-        """批量删除历史记录"""
-        try:
-            result = await self.collection.delete_many({"id": {"$in": history_ids}})
-            deleted_count = result.deleted_count
-
-            logger.info(f"批量删除历史记录: {deleted_count}/{len(history_ids)}")
-            return deleted_count
-
-        except Exception as e:
-            logger.error(f"批量删除历史记录失败: {e}")
-            raise
-
-    async def count_by_status(self, status: GenerationStatus) -> int:
-        """按状态统计记录数量"""
-        try:
-            return await self.collection.count_documents({"status": status})
-        except Exception as e:
-            logger.error(f"按状态统计失败: {e}")
-            raise
-
-    async def update_with_modification(
-        self, history_id: str, new_svg: str, feedback: str, model: str
-    ) -> bool:
-        """更新记录：覆盖SVG并添加修改历史"""
-        try:
-            now = datetime.now()
-
-            # 准备修改历史记录
-            modification_record = {
-                "feedback": feedback,
-                "timestamp": now.isoformat(),
-                "model": model,
-            }
-
-            # 修复：正确的MongoDB更新语法
-            result = await self.collection.update_one(
-                {"id": history_id},
+            # 按声音类型统计
+            voice_pipeline = [
+                {"$match": {"audio_url": {"$ne": None, "$exists": True}}},
                 {
-                    "$set": {
-                        "svg_code": new_svg,
-                        "updated_at": now,
-                    },
-                    "$push": {"modification_history": modification_record},
+                    "$group": {
+                        "_id": "$audio_metadata.voice_type",
+                        "count": {"$sum": 1},
+                        "total_size": {"$sum": "$audio_metadata.file_size"},
+                    }
                 },
+                {"$sort": {"count": -1}},
+            ]
+
+            voice_results = await self.collection.aggregate(voice_pipeline).to_list(
+                length=None
+            )
+            by_voice_type = []
+            total_size = 0
+            for item in voice_results:
+                voice_type = item["_id"] or "unknown"
+                count = item["count"]
+                size = item["total_size"] or 0
+                total_size += size
+
+                by_voice_type.append(
+                    {"voice_type": voice_type, "count": count, "total_size": size}
+                )
+
+            return AudioStats(
+                total_audio_files=audio_count,
+                total_audio_size=total_size,
+                by_voice_type=by_voice_type,
             )
 
-            success = result.modified_count > 0
-            if success:
-                logger.info(f"修改记录更新成功: {history_id}")
-            else:
-                logger.warning(f"修改记录未更新: {history_id}")
-
-            return success
-
         except Exception as e:
-            logger.error(f"更新修改记录失败: {e}")
-            raise
-
-    async def get_modification_count(self, history_id: str) -> int:
-        """获取记录的修改次数"""
-        try:
-            result = await self.collection.find_one(
-                {"id": history_id}, {"modification_history": 1}
-            )
-
-            if result and "modification_history" in result:
-                return len(result["modification_history"])
-            return 0
-
-        except Exception as e:
-            logger.error(f"获取修改次数失败: {e}")
-            return 0
+            logger.error(f"获取音频统计失败: {e}")
+            return None

@@ -18,16 +18,24 @@ class GenerationStatus(str, Enum):
     FAILED = "failed"
 
 
+class VoiceType(str, Enum):
+    """TTS声音类型"""
+
+    CHELSIE = "Chelsie"  # 女
+    CHERRY = "Cherry"  # 甜美-女
+    ETHAN = "Ethan"  # 男
+    SERENA = "Serena"  # 女
+    DYLAN = "Dylan"  # 京腔-男
+    JADA = "Jada"  # 吴语-女
+    SUNNY = "Sunny"  # 川-女
+
+
 # 请求模型
 class GenerateContentRequest(BaseModel):
     question: str = Field(..., min_length=1, max_length=500, description="物理问题")
     model: ModelType = Field(ModelType.CLAUDE, description="使用的模型")
-
-
-class GenerateAnimationRequest(BaseModel):
-    question: str = Field(..., min_length=1, max_length=500, description="物理问题")
-    explanation: str = Field(..., min_length=50, description="物理解释")
-    model: ModelType = Field(ModelType.CLAUDE, description="使用的模型")
+    enable_tts: bool = Field(True, description="是否启用TTS语音合成")
+    voice_type: VoiceType = Field(VoiceType.CHERRY, description="TTS声音类型")
 
 
 class ModifySVGRequest(BaseModel):
@@ -48,6 +56,9 @@ class GenerationHistoryCreate(BaseModel):
     status: GenerationStatus = GenerationStatus.SUCCESS
     error_message: Optional[str] = None
     metadata: Optional[Dict[str, Any]] = None
+    # 音频相关字段
+    audio_url: Optional[str] = None
+    audio_metadata: Optional[Dict[str, Any]] = None
 
 
 class GenerationHistory(BaseModel):
@@ -68,9 +79,15 @@ class GenerationHistory(BaseModel):
         default_factory=list, description="修改历史记录"
     )
 
+    # 音频相关字段
+    audio_url: Optional[str] = Field(None, description="音频文件CDN访问URL")
+    audio_metadata: Optional[Dict[str, Any]] = Field(
+        None, description="音频元数据，包含声音类型、文件大小等信息"
+    )
+
 
 class GenerationHistoryResponse(BaseModel):
-    """API响应的历史记录模型（可能隐藏某些字段）"""
+    """API响应的历史记录模型"""
 
     id: str
     question: str
@@ -82,6 +99,10 @@ class GenerationHistoryResponse(BaseModel):
     metadata: Optional[Dict[str, Any]] = None
     modification_history: List[Dict[str, Any]] = Field(default_factory=list)
 
+    # 音频相关字段
+    audio_url: Optional[str] = Field(None, description="音频文件访问URL")
+    audio_metadata: Optional[Dict[str, Any]] = Field(None, description="音频元数据")
+
 
 # 搜索和分页模型
 class HistorySearchRequest(BaseModel):
@@ -92,6 +113,8 @@ class HistorySearchRequest(BaseModel):
     end_date: Optional[datetime] = Field(None, description="结束日期")
     page: int = Field(1, ge=1, description="页码")
     page_size: int = Field(20, ge=1, le=100, description="每页数量")
+    # 音频筛选
+    has_audio: Optional[bool] = Field(None, description="是否包含音频")
 
 
 class PaginatedResponse(BaseModel):
@@ -116,6 +139,14 @@ class ActivityStats(BaseModel):
     count: int
 
 
+class AudioStats(BaseModel):
+    """音频统计模型"""
+
+    total_audio_files: int
+    total_audio_size: int  # 字节
+    by_voice_type: List[Dict[str, Any]]
+
+
 class StatsResponse(BaseModel):
     """统计响应模型"""
 
@@ -125,6 +156,8 @@ class StatsResponse(BaseModel):
     by_model: List[ModelStats]
     recent_activity: List[ActivityStats]
     timestamp: datetime
+    # 音频统计
+    audio_stats: Optional[AudioStats] = None
 
 
 # 响应模型
@@ -137,6 +170,8 @@ class FullGenerationResponse(BaseModel):
     content: Dict[str, Any]  # PhysicsContent
     animation: Dict[str, Any]  # SVGGeneration
     created_at: datetime
+    # 音频相关字段
+    audio: Optional[Dict[str, Any]] = Field(None, description="音频信息")
 
 
 class SuccessResponse(BaseModel):

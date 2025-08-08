@@ -1,5 +1,7 @@
 # services/generation_service.py
 import logging
+import uuid
+from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple
 
 from core.chains import (
@@ -14,6 +16,8 @@ from core.llm import get_llm
 from db.models import GenerationStatus
 from langchain_core.runnables import Runnable
 from services.history_service import HistoryService
+from services.storage_service import QiniuStorageService
+from services.tts_service import TTSService
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +27,33 @@ class GenerationService:
         self.history_service = history_service
         # 统一的chains缓存：{model-chain_type: chain}
         self.chains: Dict[str, Runnable] = {}
+
+        # 初始化TTS和存储服务
+        self.tts_service = None
+        self.storage_service = None
+        self._init_services()
+
+    def _init_services(self):
+        """初始化TTS和存储服务"""
+        try:
+            self.tts_service = TTSService()
+            logger.info("TTS服务初始化成功")
+        except Exception as e:
+            logger.warning(f"TTS服务初始化失败: {e}")
+            self.tts_service = None
+
+        try:
+            self.storage_service = QiniuStorageService()
+            # 验证七牛云配置
+            is_valid, error_msg = self.storage_service.validate_config()
+            if is_valid:
+                logger.info("七牛云存储服务初始化成功")
+            else:
+                logger.warning(f"七牛云存储配置无效: {error_msg}")
+                self.storage_service = None
+        except Exception as e:
+            logger.warning(f"七牛云存储服务初始化失败: {e}")
+            self.storage_service = None
 
     def get_chain(self, model: str, chain_type: str):
         """获取或创建指定类型的chain - 扩展支持modify类型"""
@@ -43,45 +74,20 @@ class GenerationService:
 
         return self.chains[cache_key]
 
-    async def generate_content_only(self, question: str, model: str) -> PhysicsContent:
-        """仅生成物理内容解释"""
-        try:
-            logger.info(f"开始生成内容: {question[:50]}... 使用模型: {model}")
-
-            content_chain = self.get_chain(model, "content")
-            result: PhysicsContent = await content_chain.ainvoke({"question": question})
-
-            logger.info(f"内容生成成功，长度: {len(result.explanation)}")
-            return result
-
-        except Exception as e:
-            logger.error(f"内容生成失败: {e}")
-            raise
-
-    async def generate_animation_only(
-        self, question: str, explanation: str, model: str
-    ) -> SVGGeneration:
-        """仅生成SVG动画"""
-        try:
-            logger.info(f"开始生成动画: {question[:50]}... 使用模型: {model}")
-
-            svg_chain = self.get_chain(model, "svg")
-            result: SVGGeneration = await svg_chain.ainvoke(
-                {"question": question, "explanation": explanation}
-            )
-
-            logger.info(f"动画生成成功，SVG长度: {len(result.svgCode)}")
-            return result
-
-        except Exception as e:
-            logger.error(f"动画生成失败: {e}")
-            raise
-
     async def generate_full_with_history(
-        self, question: str, model: str, metadata: Optional[Dict[str, Any]] = None
-    ) -> Tuple[PhysicsContent, SVGGeneration, str]:
-        """生成完整内容并保存到历史记录"""
+        self,
+        question: str,
+        model: str,
+        enable_tts: bool = True,
+        voice_type: str = "Cherry",
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> Tuple[
+        PhysicsContent, SVGGeneration, str, Optional[str], Optional[Dict[str, Any]]
+    ]:
+        """生成完整内容并保存到历史记录，包含音频"""
         history_record = None
+        audio_url = None
+        audio_metadata = None
 
         try:
             # 1. 创建pending记录
@@ -107,16 +113,36 @@ class GenerationService:
                 {"question": question, "explanation": physics_content.explanation}
             )
 
-            # 5. 更新为成功状态
+            # 5. 生成音频（如果启用）
+            if enable_tts and self._can_generate_audio():
+                try:
+                    logger.info(f"生成音频: {history_id}")
+                    audio_url, audio_metadata = (
+                        await self._generate_audio_with_proper_key(
+                            physics_content.explanation, voice_type, history_id
+                        )
+                    )
+                    logger.info(f"音频生成成功: {history_id}")
+                except Exception as audio_error:
+                    logger.error(f"音频生成失败，但不影响主流程: {audio_error}")
+                    # 音频生成失败不影响主流程
+                    audio_url = None
+                    audio_metadata = None
+
+            # 6. 更新为成功状态
             await self.history_service.update_record(
                 history_id=history_id,
                 explanation=physics_content.explanation,
                 svg_code=svg_result.svgCode,
                 status=GenerationStatus.SUCCESS,
+                audio_url=audio_url,
+                audio_metadata=audio_metadata,
             )
 
-            logger.info(f"完整生成成功: {history_id}")
-            return physics_content, svg_result, history_id
+            logger.info(
+                f"完整生成成功: {history_id}, 包含音频: {audio_url is not None}"
+            )
+            return physics_content, svg_result, history_id, audio_url, audio_metadata
 
         except Exception as e:
             logger.error(f"完整生成失败: {e}")
@@ -132,7 +158,61 @@ class GenerationService:
                 except Exception as update_error:
                     logger.error(f"更新失败状态失败: {update_error}")
 
+            # 如果音频已上传，尝试清理
+            if audio_url and self.storage_service:
+                try:
+                    await self.storage_service.delete_audio_file(audio_url)
+                    logger.info(f"清理失败记录的音频文件: {audio_url}")
+                except Exception as cleanup_error:
+                    logger.error(f"清理音频文件失败: {cleanup_error}")
+
             raise
+
+    async def _generate_audio_with_proper_key(
+        self, text: str, voice_type: str, history_id: str
+    ) -> Tuple[str, Dict[str, Any]]:
+        """使用正确的history_id生成并上传音频"""
+        temp_file_path = None
+        try:
+            # 1. 验证文本
+            is_valid, error_msg = self.tts_service.validate_text(text)
+            if not is_valid:
+                raise Exception(f"文本验证失败: {error_msg}")
+
+            # 2. 生成音频
+            temp_file_path = await self.tts_service.generate_audio(text, voice_type)
+
+            # 3. 使用正确的history_id上传
+            audio_url = await self.storage_service.upload_audio_file(
+                temp_file_path, history_id
+            )
+
+            # 4. 获取文件信息
+            file_info = self.storage_service.get_file_info(audio_url)
+
+            # 5. 构建音频元数据
+            audio_metadata = {
+                "voice_type": voice_type,
+                "text_length": len(text),
+                "file_size": file_info.get("size", 0) if file_info else 0,
+                "mime_type": (
+                    file_info.get("mime_type", "audio/wav")
+                    if file_info
+                    else "audio/wav"
+                ),
+                "generated_at": datetime.now().isoformat(),
+            }
+
+            return audio_url, audio_metadata
+
+        finally:
+            # 清理临时文件
+            if temp_file_path:
+                self.tts_service.cleanup_temp_file(temp_file_path)
+
+    def _can_generate_audio(self) -> bool:
+        """检查是否具备音频生成能力"""
+        return self.tts_service is not None and self.storage_service is not None
 
     def clear_cache(
         self, model: Optional[str] = None, chain_type: Optional[str] = None
@@ -177,11 +257,19 @@ class GenerationService:
                 models.add(model)
                 chain_types.add(chain_type)
 
+        # 添加服务状态信息
+        service_status = {
+            "tts_available": self.tts_service is not None,
+            "storage_available": self.storage_service is not None,
+            "audio_generation_available": self._can_generate_audio(),
+        }
+
         return {
             "cached_chains": cached_chains,
             "cached_models": list(models),
             "cached_chain_types": list(chain_types),
             "total_cached": len(cached_chains),
+            "service_status": service_status,
         }
 
     async def modify_svg(
@@ -253,3 +341,29 @@ class GenerationService:
             texts.append(f"修改{i}({timestamp[:10]}): {feedback} [模型: {model}]")
 
         return "\n".join(texts)
+
+    async def get_service_status(self) -> Dict[str, Any]:
+        """获取服务状态信息"""
+        status = {
+            "tts_service": {
+                "available": self.tts_service is not None,
+                "voices": (
+                    self.tts_service.get_available_voices() if self.tts_service else []
+                ),
+            },
+            "storage_service": {
+                "available": self.storage_service is not None,
+            },
+            "audio_generation": {
+                "available": self._can_generate_audio(),
+            },
+        }
+
+        # 如果存储服务可用，添加配置验证信息
+        if self.storage_service:
+            is_valid, error_msg = self.storage_service.validate_config()
+            status["storage_service"]["config_valid"] = is_valid
+            if not is_valid:
+                status["storage_service"]["error"] = error_msg
+
+        return status

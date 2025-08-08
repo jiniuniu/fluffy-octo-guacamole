@@ -17,7 +17,7 @@ def get_llm(model: str = "claude", temperature: float = 0.2):
 
     elif model == "qwen":
         return ChatOpenAI(
-            api_key=os.getenv("QWEN_API_KEY"),
+            api_key=os.getenv("DASHSCOPE_API_KEY"),
             model="qwen3-coder-plus",
             temperature=temperature,
             base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
