@@ -1,4 +1,4 @@
-// components/ModernGenerationForm.tsx
+// components/GenerationForm.tsx
 "use client";
 
 import { useState } from "react";
@@ -89,46 +89,46 @@ export function GenerationForm() {
           生成新内容
         </h2>
 
-        {/* 主要输入区域 */}
+        {/* 主要输入区域 - 内嵌提交按钮 */}
         <div className="space-y-3">
-          {/* 输入框 */}
-          <div className="bg-white border border-gray-200 rounded-2xl shadow-sm hover:shadow-md transition-shadow duration-200 focus-within:shadow-md focus-within:border-blue-300">
+          <div className="bg-white border border-gray-200 rounded-2xl shadow-sm hover:shadow-md transition-shadow duration-200 focus-within:shadow-md focus-within:border-blue-300 relative">
             <Textarea
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="请输入物理问题或现象...&#10;&#10;例如: 为什么会有彩虹? 自由落体的加速度是多少?"
-              className="min-h-[120px] resize-none border-0 bg-transparent focus:ring-0 focus:outline-none p-4 text-sm leading-relaxed"
+              className="min-h-[160px] resize-y border-0 bg-transparent focus:ring-0 focus:outline-none p-4 pr-14 text-sm leading-relaxed"
               disabled={isGenerating}
             />
 
-            {/* 输入框底部工具栏 */}
-            <div className="flex items-center justify-between px-4 pb-3 pt-1">
-              {/* 字符计数 */}
-              <div className="text-xs text-gray-500">
-                {question.length}/500
-                {question.length > 0 && question.length < 5 && (
-                  <span className="text-orange-600 ml-1">(最少5个字符)</span>
-                )}
-              </div>
+            {/* 内嵌的发送按钮 */}
+            <Button
+              onClick={handleGenerate}
+              disabled={!isFormValid}
+              size="sm"
+              className={`absolute bottom-3 right-3 h-8 w-8 p-0 rounded-full transition-all duration-200 shadow-sm hover:shadow-md ${
+                isFormValid
+                  ? "bg-blue-600 hover:bg-blue-700 text-white"
+                  : "bg-gray-300 text-gray-500 cursor-not-allowed"
+              }`}
+            >
+              {isGenerating ? (
+                <div className="animate-spin w-3 h-3 border border-white border-t-transparent rounded-full" />
+              ) : (
+                <Send className="w-3 h-3" />
+              )}
+            </Button>
 
-              {/* 发送按钮 */}
-              <Button
-                onClick={handleGenerate}
-                disabled={!isFormValid}
-                size="sm"
-                className="h-8 w-8 p-0 rounded-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-sm hover:shadow-md"
-              >
-                {isGenerating ? (
-                  <div className="animate-spin w-3 h-3 border border-white border-t-transparent rounded-full" />
-                ) : (
-                  <Send className="w-3 h-3 text-white" />
-                )}
-              </Button>
+            {/* 字符计数 - 移到左下角 */}
+            <div className="absolute bottom-3 left-4 text-xs text-gray-500">
+              {question.length}/500
+              {question.length > 0 && question.length < 5 && (
+                <span className="text-orange-600 ml-1">(最少5个字符)</span>
+              )}
             </div>
           </div>
 
-          {/* 模型选择行 */}
+          {/* 模型选择 */}
           <div className="space-y-2">
             <label className="text-xs font-medium text-gray-700">AI模型</label>
             <DropdownMenu>
@@ -200,7 +200,7 @@ export function GenerationForm() {
             </DropdownMenu>
           </div>
 
-          {/* 音频选择行 */}
+          {/* 音频选择 */}
           <div className="space-y-2">
             <label className="text-xs font-medium text-gray-700">
               语音设置
@@ -300,19 +300,6 @@ export function GenerationForm() {
                 )}
               </DropdownMenuContent>
             </DropdownMenu>
-          </div>
-
-          {/* 快捷键提示和状态信息 */}
-          <div className="space-y-1">
-            {question.length > 0 && (
-              <div className="text-xs text-gray-400">按 Cmd+Enter 快速发送</div>
-            )}
-            {enableTts && (
-              <div className="text-xs text-gray-500 flex items-center gap-1">
-                <Mic className="w-3 h-3" />
-                将为物理解释生成专业语音朗读
-              </div>
-            )}
           </div>
         </div>
       </div>

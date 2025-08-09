@@ -1,10 +1,10 @@
-// components/UpdatedContentViewer.tsx
+// components/ContentViewer.tsx
 "use client";
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Copy } from "lucide-react";
+import { Copy, Eye, EyeOff } from "lucide-react";
 import { SVGPreview } from "./SVGPreview";
 import { useAppStore, useAppActions } from "@/lib/store";
 import { GenerationRecord } from "@/lib/types";
@@ -15,6 +15,7 @@ interface ContentViewerProps {
 
 export function ContentViewer({ record }: ContentViewerProps) {
   const [currentRecord, setCurrentRecord] = useState(record);
+  const [showDock, setShowDock] = useState(true); // 新增：控制dock显示状态
   const store = useAppStore();
   const actions = useAppActions();
 
@@ -133,22 +134,66 @@ export function ContentViewer({ record }: ContentViewerProps) {
           </div>
         )}
 
-      {/* 主要内容 - SVG动画占据全屏 */}
-      <div className="h-full p-8">
-        <SVGPreview
-          svgCode={currentRecord.svg_code}
-          className="w-full h-full"
-          record={currentRecord}
-          onSvgModified={handleSvgModified}
-        />
-      </div>
+      {/* 布局容器 - 避免重叠 */}
+      <div className="h-full flex flex-col">
+        {/* 标题区域 - 固定高度，不重叠 */}
+        <div className="flex-shrink-0 p-6 pb-3">
+          <div className="backdrop-blur-xl bg-white/20 border border-white/30 rounded-2xl px-6 py-4 shadow-lg">
+            <div className="flex items-center justify-between">
+              <div className="flex-1 min-w-0">
+                <h2 className="text-lg font-semibold text-gray-900 truncate pr-4">
+                  {currentRecord.question}
+                </h2>
+                <div className="flex items-center gap-3 mt-2">
+                  <div className="flex items-center gap-1 text-xs text-gray-600">
+                    <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                    <span>
+                      {currentRecord.model === "claude" ? "Claude" : "Qwen"}
+                    </span>
+                  </div>
+                  {currentRecord.audio_url && (
+                    <div className="flex items-center gap-1 text-xs text-gray-600">
+                      <span>🎤</span>
+                      <span>音频</span>
+                    </div>
+                  )}
+                  <div className="text-xs text-gray-500">
+                    {new Date(currentRecord.created_at).toLocaleDateString(
+                      "zh-CN"
+                    )}
+                  </div>
+                </div>
+              </div>
 
-      {/* 问题标题 - 悬浮在顶部 */}
-      <div className="absolute top-4 left-4 right-4 z-10">
-        <div className="bg-white/90 backdrop-blur-sm border border-gray-200 rounded-lg px-4 py-2 shadow-sm">
-          <h2 className="text-sm font-medium text-gray-900 truncate">
-            {currentRecord.question}
-          </h2>
+              {/* 控制面板显示/隐藏按钮 */}
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowDock(!showDock)}
+                  className="h-8 w-8 p-0 bg-white/40 hover:bg-white/60 border border-white/40 backdrop-blur-sm"
+                  title={showDock ? "隐藏控制面板" : "显示控制面板"}
+                >
+                  {showDock ? (
+                    <EyeOff className="w-4 h-4 text-gray-700" />
+                  ) : (
+                    <Eye className="w-4 h-4 text-gray-700" />
+                  )}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* SVG动画区域 - 填充剩余空间，左右padding与标题一致 */}
+        <div className="flex-1 px-6 pb-6">
+          <SVGPreview
+            svgCode={currentRecord.svg_code}
+            className="w-full h-full"
+            record={currentRecord}
+            onSvgModified={handleSvgModified}
+            showDock={showDock}
+          />
         </div>
       </div>
     </div>

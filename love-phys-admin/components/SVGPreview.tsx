@@ -13,6 +13,7 @@ interface SVGPreviewProps {
   className?: string;
   record?: GenerationRecord;
   onSvgModified?: (newSvgCode: string) => void;
+  showDock?: boolean; // 新增：控制dock显示
 }
 
 export function SVGPreview({
@@ -20,6 +21,7 @@ export function SVGPreview({
   className = "",
   record,
   onSvgModified,
+  showDock = true, // 默认显示dock
 }: SVGPreviewProps) {
   const [error, setError] = useState<string | null>(null);
   const [currentSvgCode, setCurrentSvgCode] = useState(svgCode);
@@ -76,6 +78,18 @@ export function SVGPreview({
   useEffect(() => {
     setCurrentSvgCode(svgCode);
   }, [svgCode]);
+
+  // 全屏状态监听
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+    };
+  }, []);
 
   useEffect(() => {
     if (!containerRef.current || !currentSvgCode) return;
@@ -214,8 +228,14 @@ export function SVGPreview({
         <audio ref={audioRef} src={record.audio_url} preload="metadata" />
       )}
 
-      {/* SVG容器 - 占据全部空间 */}
-      <div className="h-full bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl border border-gray-200 flex items-center justify-center relative overflow-hidden shadow-lg">
+      {/* SVG容器 - 根据全屏状态调整背景 */}
+      <div
+        className={`h-full rounded-2xl border flex items-center justify-center relative overflow-hidden shadow-lg ${
+          isFullscreen
+            ? "bg-gray-100" // 全屏时使用浅灰色背景
+            : "bg-gradient-to-br from-gray-50 to-gray-100 border-gray-200"
+        }`}
+      >
         {/* SVG内容区域 */}
         <div
           ref={containerRef}
@@ -223,8 +243,8 @@ export function SVGPreview({
         />
       </div>
 
-      {/* 悬浮操作dock - 位于底部中央 */}
-      {record && record.status === "success" && (
+      {/* 悬浮操作dock - 只在showDock为true且状态为success时显示 */}
+      {record && record.status === "success" && showDock && (
         <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-20">
           <FloatingActionDock
             record={record}
