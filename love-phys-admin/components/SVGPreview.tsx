@@ -25,6 +25,7 @@ export function SVGPreview({
   const [overlayType, setOverlayType] = useState<
     "explanation" | "tech-info" | null
   >(null);
+  const [showAudio, setShowAudio] = useState(true); // 新增状态控制音频播放器显示
   const containerRef = useRef<HTMLDivElement>(null);
 
   // 当外部svgCode变化时，更新内部状态
@@ -71,6 +72,11 @@ export function SVGPreview({
     }
   };
 
+  // 切换音频播放器显示状态
+  const handleToggleAudio = () => {
+    setShowAudio(!showAudio);
+  };
+
   if (error) {
     return (
       <div
@@ -107,8 +113,8 @@ export function SVGPreview({
           className="p-8 flex items-center justify-center min-h-[320px] w-full"
         />
 
-        {/* 音频播放器 - 绝对定位覆盖在SVG上层 */}
-        {record && record.audio_url && (
+        {/* 音频播放器 - 绝对定位覆盖在SVG上层，受showAudio状态控制 */}
+        {record && record.audio_url && showAudio && (
           <div className="absolute bottom-20 left-10 right-10 z-10">
             <AudioPlayer record={record} />
           </div>
@@ -122,6 +128,8 @@ export function SVGPreview({
           onShowExplanation={() => setOverlayType("explanation")}
           onShowTechInfo={() => setOverlayType("tech-info")}
           onSvgModified={handleSvgModified}
+          showAudio={showAudio}
+          onToggleAudio={handleToggleAudio}
         />
       )}
 
