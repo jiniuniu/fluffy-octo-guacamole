@@ -1,4 +1,4 @@
-// components/SVGModifyDialog.tsx
+// components/UpdatedSVGModifyDialog.tsx
 "use client";
 
 import { useState, ReactNode } from "react";
@@ -19,15 +19,19 @@ import { GenerationRecord } from "@/lib/types";
 interface SVGModifyDialogProps {
   record: GenerationRecord;
   onModified?: (newSvgCode: string) => void;
-  children?: ReactNode; // 支持自定义触发器
+  children?: ReactNode;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 export function SVGModifyDialog({
   record,
   onModified,
   children,
+  open: controlledOpen,
+  onOpenChange,
 }: SVGModifyDialogProps) {
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
   const [feedback, setFeedback] = useState("");
   const [selectedModel, setSelectedModel] = useState<"claude" | "qwen">(
     "claude"
@@ -36,6 +40,10 @@ export function SVGModifyDialog({
   const [error, setError] = useState<string | null>(null);
 
   const actions = useAppActions();
+
+  // 使用受控的open状态（如果提供）或内部状态
+  const open = controlledOpen !== undefined ? controlledOpen : internalOpen;
+  const setOpen = onOpenChange || setInternalOpen;
 
   const handleModify = async () => {
     if (!feedback.trim() || isModifying) return;
@@ -73,17 +81,7 @@ export function SVGModifyDialog({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {children || (
-          <Button
-            variant="outline"
-            size="sm"
-            className="absolute top-2 right-2 z-10 bg-white/90 hover:bg-white shadow-sm"
-          >
-            🔧 Fix Me
-          </Button>
-        )}
-      </DialogTrigger>
+      {children && <DialogTrigger asChild>{children}</DialogTrigger>}
 
       <DialogContent className="sm:max-w-md">
         <DialogHeader>

@@ -1,10 +1,11 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 // components/SVGPreview.tsx
 "use client";
 
 import { useRef, useEffect, useState } from "react";
-import { CompactActionButtons } from "./CompactActionButtons";
+import { FloatingActionDock } from "./FloatingActionDock";
 import { PhysicsInfoOverlay } from "./PhysicsInfoOverlay";
-import { AudioPlayer } from "./AudioPlayer";
+import { SVGModifyDialog } from "./SVGModifyDialog";
 import { GenerationRecord } from "@/lib/types";
 
 interface SVGPreviewProps {
@@ -25,8 +26,51 @@ export function SVGPreview({
   const [overlayType, setOverlayType] = useState<
     "explanation" | "tech-info" | null
   >(null);
-  const [showAudio, setShowAudio] = useState(true); // 新增状态控制音频播放器显示
+  const [showAudio, setShowAudio] = useState(true);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showModifyDialog, setShowModifyDialog] = useState(false);
+
+  // 音频控制状态
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+  const [volume, setVolume] = useState(1);
+  const [audioError, setAudioError] = useState<string | null>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // 音频播放逻辑 - 参考 AudioPlayer
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio || !record?.audio_url) return;
+
+    const handleLoadStart = () => setAudioError(null);
+    const handleCanPlay = () => setAudioError(null);
+    const handleError = () => {
+      setAudioError("音频加载失败");
+      setIsPlaying(false);
+    };
+    const handleEnded = () => setIsPlaying(false);
+
+    audio.addEventListener("loadstart", handleLoadStart);
+    audio.addEventListener("canplay", handleCanPlay);
+    audio.addEventListener("error", handleError);
+    audio.addEventListener("ended", handleEnded);
+
+    return () => {
+      audio.removeEventListener("loadstart", handleLoadStart);
+      audio.removeEventListener("canplay", handleCanPlay);
+      audio.removeEventListener("error", handleError);
+      audio.removeEventListener("ended", handleEnded);
+    };
+  }, [record?.audio_url]);
+
+  // 控制音频音量
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    audio.volume = isMuted ? 0 : volume;
+  }, [isMuted, volume]);
 
   // 当外部svgCode变化时，更新内部状态
   useEffect(() => {
@@ -73,14 +117,74 @@ export function SVGPreview({
   };
 
   // 切换音频播放器显示状态
-  const handleToggleAudio = () => {
+  const handleToggleAudioVisibility = () => {
     setShowAudio(!showAudio);
+  };
+
+  // 全屏切换
+  const handleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      containerRef.current?.requestFullscreen?.();
+      setIsFullscreen(true);
+    } else {
+      document.exitFullscreen();
+      setIsFullscreen(false);
+    }
+  };
+
+  // 下载处理
+  const handleDownload = () => {
+    const blob = new Blob([currentSvgCode], { type: "image/svg+xml" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `physics_animation_${record?.id || "download"}.svg`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  // 音频播放控制
+  const handleTogglePlayback = async () => {
+    const audio = audioRef.current;
+    if (!audio || !record?.audio_url) return;
+
+    try {
+      if (isPlaying) {
+        audio.pause();
+        setIsPlaying(false);
+      } else {
+        await audio.play();
+        setIsPlaying(true);
+      }
+    } catch (err) {
+      setAudioError("播放失败");
+      setIsPlaying(false);
+    }
+  };
+
+  // 音量控制
+  const handleToggleAudio = () => {
+    setIsMuted(!isMuted);
+  };
+
+  // 下载音频
+  const handleDownloadAudio = () => {
+    if (record?.audio_url) {
+      const link = document.createElement("a");
+      link.href = record.audio_url;
+      link.download = `physics_audio_${record.id}.wav`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
   };
 
   if (error) {
     return (
       <div
-        className={`flex items-center justify-center bg-red-50 border border-red-200 rounded-lg p-6 ${className}`}
+        className={`flex items-center justify-center bg-red-50 border border-red-200 rounded-2xl p-6 ${className}`}
       >
         <div className="text-center">
           <span className="text-2xl mb-2 block">⚠️</span>
@@ -93,7 +197,7 @@ export function SVGPreview({
   if (!currentSvgCode) {
     return (
       <div
-        className={`flex items-center justify-center bg-gray-50 border border-gray-200 rounded-lg p-6 ${className}`}
+        className={`flex items-center justify-center bg-gray-50 border border-gray-200 rounded-2xl p-6 ${className}`}
       >
         <div className="text-center text-gray-500">
           <span className="text-2xl mb-2 block">🎨</span>
@@ -104,42 +208,59 @@ export function SVGPreview({
   }
 
   return (
-    <div className={`w-full relative ${className}`}>
-      {/* SVG容器 - 相对定位，为音频播放器提供定位基准 */}
-      <div className="relative bg-white border border-gray-200 rounded-lg overflow-hidden">
+    <div className={`w-full h-full relative ${className}`}>
+      {/* 隐藏的音频元素 */}
+      {record?.audio_url && (
+        <audio ref={audioRef} src={record.audio_url} preload="metadata" />
+      )}
+
+      {/* SVG容器 - 占据全部空间 */}
+      <div className="h-full bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl border border-gray-200 flex items-center justify-center relative overflow-hidden shadow-lg">
         {/* SVG内容区域 */}
         <div
           ref={containerRef}
-          className="p-8 flex items-center justify-center min-h-[320px] w-full"
+          className="p-8 flex items-center justify-center w-full h-full"
         />
-
-        {/* 音频播放器 - 绝对定位覆盖在SVG上层，受showAudio状态控制 */}
-        {record && record.audio_url && showAudio && (
-          <div className="absolute bottom-20 left-10 right-10 z-10">
-            <AudioPlayer record={record} />
-          </div>
-        )}
       </div>
 
-      {/* 右上角操作按钮组 */}
+      {/* 悬浮操作dock - 位于底部中央 */}
       {record && record.status === "success" && (
-        <CompactActionButtons
-          record={record}
-          onShowExplanation={() => setOverlayType("explanation")}
-          onShowTechInfo={() => setOverlayType("tech-info")}
-          onSvgModified={handleSvgModified}
-          showAudio={showAudio}
-          onToggleAudio={handleToggleAudio}
-        />
+        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-20">
+          <FloatingActionDock
+            record={record}
+            showAudio={!isMuted}
+            isPlaying={isPlaying}
+            onToggleAudio={handleToggleAudio}
+            onTogglePlayback={handleTogglePlayback}
+            onShowExplanation={() => setOverlayType("explanation")}
+            onShowTechInfo={() => setOverlayType("tech-info")}
+            onModifyAnimation={() => setShowModifyDialog(true)}
+            onFullscreen={handleFullscreen}
+            onDownload={handleDownload}
+            onDownloadAudio={handleDownloadAudio}
+          />
+        </div>
       )}
 
       {/* 信息覆盖层 - 弹窗样式 */}
       {record && overlayType && (
-        <PhysicsInfoOverlay
+        <div className="absolute top-4 right-4 z-30">
+          <PhysicsInfoOverlay
+            record={record}
+            type={overlayType}
+            isOpen={true}
+            onClose={() => setOverlayType(null)}
+          />
+        </div>
+      )}
+
+      {/* 修改动画对话框 */}
+      {record && (
+        <SVGModifyDialog
           record={record}
-          type={overlayType}
-          isOpen={true}
-          onClose={() => setOverlayType(null)}
+          onModified={handleSvgModified}
+          open={showModifyDialog}
+          onOpenChange={setShowModifyDialog}
         />
       )}
     </div>

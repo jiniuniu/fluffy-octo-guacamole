@@ -1,20 +1,27 @@
-// components/GenerationForm.tsx
+// components/ModernGenerationForm.tsx
 "use client";
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { useAppStore, useAppActions } from "@/lib/store";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { ModelSelector } from "./ModelSelector";
+import { useAppStore, useAppActions } from "@/lib/store";
+import {
+  ChevronDown,
+  Mic,
+  MicOff,
+  Send,
+  Plus,
+  Sparkles,
+  Zap,
+} from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 
 export function GenerationForm() {
   const [question, setQuestion] = useState("");
@@ -30,6 +37,16 @@ export function GenerationForm() {
   const isGenerating =
     store.asyncOperation.isLoading &&
     store.asyncOperation.type === "generating";
+
+  const voiceOptions = [
+    { id: "Cherry", name: "Cherry", description: "甜美女声" },
+    { id: "Chelsie", name: "Chelsie", description: "标准女声" },
+    { id: "Serena", name: "Serena", description: "优雅女声" },
+    { id: "Ethan", name: "Ethan", description: "标准男声" },
+    { id: "Dylan", name: "Dylan", description: "京腔男声" },
+    { id: "Jada", name: "Jada", description: "吴语女声" },
+    { id: "Sunny", name: "Sunny", description: "川音女声" },
+  ];
 
   const handleGenerate = async () => {
     if (!question.trim() || isGenerating) return;
@@ -48,20 +65,17 @@ export function GenerationForm() {
     }
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+      e.preventDefault();
+      handleGenerate();
+    }
+  };
+
   const isFormValid = question.trim().length >= 5 && !isGenerating;
 
-  const voiceOptions = [
-    { value: "Cherry", label: "Cherry - 甜美女声" },
-    { value: "Chelsie", label: "Chelsie - 标准女声" },
-    { value: "Serena", label: "Serena - 优雅女声" },
-    { value: "Ethan", label: "Ethan - 标准男声" },
-    { value: "Dylan", label: "Dylan - 京腔男声" },
-    { value: "Jada", label: "Jada - 吴语女声" },
-    { value: "Sunny", label: "Sunny - 川音女声" },
-  ];
-
   return (
-    <div className="p-4 space-y-6">
+    <div className="p-4 space-y-4">
       {/* 错误提示 */}
       {store.error && (
         <Alert variant="destructive">
@@ -69,100 +83,239 @@ export function GenerationForm() {
         </Alert>
       )}
 
-      {/* 问题输入 */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          物理问题
-        </label>
-        <Textarea
-          value={question}
-          onChange={(e) => setQuestion(e.target.value)}
-          placeholder="请输入物理问题或现象...&#10;&#10;例如: 为什么会有彩虹? 自由落体的加速度是多少? 电磁感应的原理?"
-          className="min-h-[120px] resize-none"
-          disabled={isGenerating}
-        />
-        <div className="mt-1 text-xs text-gray-500">
-          {question.length}/500 字符 (最少5个字符)
-        </div>
-      </div>
+        <h2 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
+          <Plus className="w-4 h-4" />
+          生成新内容
+        </h2>
 
-      {/* 模型选择 */}
-      <ModelSelector
-        selectedModel={selectedModel}
-        onModelChange={setSelectedModel}
-        disabled={isGenerating}
-      />
-
-      {/* 音频选项 */}
-      <div className="space-y-3">
-        <div className="flex items-center space-x-2">
-          <Checkbox
-            id="enable-tts"
-            checked={enableTts}
-            onCheckedChange={(checked) => setEnableTts(checked as boolean)}
-            disabled={isGenerating}
-          />
-          <label
-            htmlFor="enable-tts"
-            className="text-sm font-medium text-gray-700 cursor-pointer"
-          >
-            🎤 生成语音解释
-          </label>
-        </div>
-
-        {enableTts && (
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              选择声音类型
-            </label>
-            <Select
-              value={voiceType}
-              onValueChange={setVoiceType}
+        {/* 主要输入区域 */}
+        <div className="space-y-3">
+          {/* 输入框 */}
+          <div className="bg-white border border-gray-200 rounded-2xl shadow-sm hover:shadow-md transition-shadow duration-200 focus-within:shadow-md focus-within:border-blue-300">
+            <Textarea
+              value={question}
+              onChange={(e) => setQuestion(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="请输入物理问题或现象...&#10;&#10;例如: 为什么会有彩虹? 自由落体的加速度是多少?"
+              className="min-h-[120px] resize-none border-0 bg-transparent focus:ring-0 focus:outline-none p-4 text-sm leading-relaxed"
               disabled={isGenerating}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="选择声音" />
-              </SelectTrigger>
-              <SelectContent>
-                {voiceOptions.map((voice) => (
-                  <SelectItem key={voice.value} value={voice.value}>
-                    {voice.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            />
+
+            {/* 输入框底部工具栏 */}
+            <div className="flex items-center justify-between px-4 pb-3 pt-1">
+              {/* 字符计数 */}
+              <div className="text-xs text-gray-500">
+                {question.length}/500
+                {question.length > 0 && question.length < 5 && (
+                  <span className="text-orange-600 ml-1">(最少5个字符)</span>
+                )}
+              </div>
+
+              {/* 发送按钮 */}
+              <Button
+                onClick={handleGenerate}
+                disabled={!isFormValid}
+                size="sm"
+                className="h-8 w-8 p-0 rounded-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-sm hover:shadow-md"
+              >
+                {isGenerating ? (
+                  <div className="animate-spin w-3 h-3 border border-white border-t-transparent rounded-full" />
+                ) : (
+                  <Send className="w-3 h-3 text-white" />
+                )}
+              </Button>
+            </div>
           </div>
-        )}
+
+          {/* 模型选择行 */}
+          <div className="space-y-2">
+            <label className="text-xs font-medium text-gray-700">AI模型</label>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  disabled={isGenerating}
+                  className="w-full justify-between h-10 rounded-xl border-gray-200 text-sm hover:bg-gray-50 transition-all"
+                >
+                  <div className="flex items-center gap-2">
+                    {selectedModel === "claude" ? (
+                      <>
+                        <Sparkles className="w-4 h-4 text-purple-600" />
+                        <span>Claude Sonnet 4</span>
+                        <span className="text-xs text-gray-500">
+                          • 推荐使用
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <Zap className="w-4 h-4 text-blue-600" />
+                        <span>Qwen Coder Plus</span>
+                        <span className="text-xs text-gray-500">
+                          • 响应更快
+                        </span>
+                      </>
+                    )}
+                  </div>
+                  <ChevronDown className="w-4 h-4 text-gray-400" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-80">
+                <DropdownMenuItem
+                  onClick={() => setSelectedModel("claude")}
+                  className={`flex items-center gap-3 p-3 ${
+                    selectedModel === "claude" ? "bg-purple-50" : ""
+                  }`}
+                >
+                  <Sparkles className="w-4 h-4 text-purple-600" />
+                  <div className="flex-1">
+                    <div className="font-medium text-sm">Claude Sonnet 4</div>
+                    <div className="text-xs text-gray-500">
+                      推荐使用，质量更高，响应详细
+                    </div>
+                  </div>
+                  {selectedModel === "claude" && (
+                    <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                  )}
+                </DropdownMenuItem>
+
+                <DropdownMenuItem
+                  onClick={() => setSelectedModel("qwen")}
+                  className={`flex items-center gap-3 p-3 ${
+                    selectedModel === "qwen" ? "bg-blue-50" : ""
+                  }`}
+                >
+                  <Zap className="w-4 h-4 text-blue-600" />
+                  <div className="flex-1">
+                    <div className="font-medium text-sm">Qwen Coder Plus</div>
+                    <div className="text-xs text-gray-500">
+                      响应更快，成本较低，适合简单问题
+                    </div>
+                  </div>
+                  {selectedModel === "qwen" && (
+                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                  )}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+
+          {/* 音频选择行 */}
+          <div className="space-y-2">
+            <label className="text-xs font-medium text-gray-700">
+              语音设置
+            </label>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  disabled={isGenerating}
+                  className="w-full justify-between h-10 rounded-xl border-gray-200 text-sm hover:bg-gray-50 transition-all"
+                >
+                  <div className="flex items-center gap-2">
+                    {enableTts ? (
+                      <>
+                        <Mic className="w-4 h-4 text-orange-600" />
+                        <span>语音解释</span>
+                        <span className="text-xs text-gray-500">
+                          • {voiceType}
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <MicOff className="w-4 h-4 text-gray-500" />
+                        <span>关闭语音</span>
+                        <span className="text-xs text-gray-500">• 仅文本</span>
+                      </>
+                    )}
+                  </div>
+                  <ChevronDown className="w-4 h-4 text-gray-400" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-80">
+                <DropdownMenuItem
+                  onClick={() => setEnableTts(false)}
+                  className={`flex items-center gap-3 p-3 ${
+                    !enableTts ? "bg-gray-50" : ""
+                  }`}
+                >
+                  <MicOff className="w-4 h-4 text-gray-500" />
+                  <div className="flex-1">
+                    <div className="font-medium text-sm">关闭语音</div>
+                    <div className="text-xs text-gray-500">
+                      仅生成文字解释，更快完成
+                    </div>
+                  </div>
+                  {!enableTts && (
+                    <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
+                  )}
+                </DropdownMenuItem>
+
+                <DropdownMenuItem
+                  onClick={() => setEnableTts(true)}
+                  className={`flex items-center gap-3 p-3 ${
+                    enableTts ? "bg-orange-50" : ""
+                  }`}
+                >
+                  <Mic className="w-4 h-4 text-orange-600" />
+                  <div className="flex-1">
+                    <div className="font-medium text-sm">生成语音解释</div>
+                    <div className="text-xs text-gray-500">
+                      为物理解释添加专业语音朗读
+                    </div>
+                  </div>
+                  {enableTts && (
+                    <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+                  )}
+                </DropdownMenuItem>
+
+                {enableTts && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <div className="px-3 py-2 text-xs font-medium text-gray-500">
+                      选择声音类型
+                    </div>
+                    {voiceOptions.map((voice) => (
+                      <DropdownMenuItem
+                        key={voice.id}
+                        onClick={() => setVoiceType(voice.id)}
+                        className={`flex items-center justify-between px-3 py-2 ${
+                          voiceType === voice.id ? "bg-orange-50" : ""
+                        }`}
+                      >
+                        <div>
+                          <div className="font-medium text-sm">
+                            {voice.name}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {voice.description}
+                          </div>
+                        </div>
+                        {voiceType === voice.id && (
+                          <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+                        )}
+                      </DropdownMenuItem>
+                    ))}
+                  </>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+
+          {/* 快捷键提示和状态信息 */}
+          <div className="space-y-1">
+            {question.length > 0 && (
+              <div className="text-xs text-gray-400">按 Cmd+Enter 快速发送</div>
+            )}
+            {enableTts && (
+              <div className="text-xs text-gray-500 flex items-center gap-1">
+                <Mic className="w-3 h-3" />
+                将为物理解释生成专业语音朗读
+              </div>
+            )}
+          </div>
+        </div>
       </div>
-
-      {/* 生成按钮 */}
-      <Button
-        onClick={handleGenerate}
-        disabled={!isFormValid}
-        className="w-full"
-        size="lg"
-      >
-        {isGenerating ? (
-          <>
-            <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2"></div>
-            生成中...
-          </>
-        ) : (
-          `🎯 生成内容${enableTts ? "和音频" : ""}动画`
-        )}
-      </Button>
-
-      {!isFormValid && question.length > 0 && question.length < 5 && (
-        <p className="text-xs text-orange-600 text-center">
-          问题描述至少需要5个字符
-        </p>
-      )}
-
-      {enableTts && (
-        <p className="text-xs text-gray-500 text-center">
-          💡 启用语音功能将为物理解释生成专业的语音朗读
-        </p>
-      )}
     </div>
   );
 }

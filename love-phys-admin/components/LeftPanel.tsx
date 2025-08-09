@@ -1,51 +1,32 @@
+// components/CleanLeftPanel.tsx
 "use client";
 
-import { useState } from "react";
 import { GenerationForm } from "./GenerationForm";
 import { HistoryList } from "./HistoryList";
-import { Plus, History, Sparkles } from "lucide-react";
+import { Sparkles } from "lucide-react";
 
-export function LeftPanel() {
-  const [activeTab, setActiveTab] = useState<"generate" | "history">(
-    "generate"
-  );
+interface LeftPanelProps {
+  activeTab: "generate" | "history";
+}
 
+export function LeftPanel({ activeTab }: LeftPanelProps) {
   return (
-    <div className="h-full bg-gradient-to-b from-gray-50 to-white border-r border-gray-200 flex flex-col shadow-sm">
-      {/* Tab 切换 */}
-      <div className="p-4 border-b border-gray-200 bg-white/80 backdrop-blur-sm">
-        <div className="flex bg-gray-100/80 rounded-xl p-1.5 shadow-inner">
-          <button
-            onClick={() => setActiveTab("generate")}
-            className={`flex-1 py-3 px-4 text-sm font-medium rounded-lg transition-all duration-200 flex items-center justify-center gap-2 ${
-              activeTab === "generate"
-                ? "bg-white text-blue-700 shadow-md ring-1 ring-blue-100 transform scale-[0.98]"
-                : "text-gray-600 hover:text-gray-800 hover:bg-white/50"
-            }`}
-          >
-            {activeTab === "generate" ? (
-              <Sparkles className="w-4 h-4" />
-            ) : (
-              <Plus className="w-4 h-4" />
-            )}
-            <span>新建生成</span>
-          </button>
-          <button
-            onClick={() => setActiveTab("history")}
-            className={`flex-1 py-3 px-4 text-sm font-medium rounded-lg transition-all duration-200 flex items-center justify-center gap-2 ${
-              activeTab === "history"
-                ? "bg-white text-purple-700 shadow-md ring-1 ring-purple-100 transform scale-[0.98]"
-                : "text-gray-600 hover:text-gray-800 hover:bg-white/50"
-            }`}
-          >
-            <History className="w-4 h-4" />
-            <span>历史记录</span>
-          </button>
+    <div className="w-80 bg-white/80 backdrop-blur-sm border-r border-gray-200 flex flex-col shadow-sm">
+      {/* Logo和标题 */}
+      <div className="p-4 border-b border-gray-200 bg-white/90">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-md">
+            <Sparkles className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h1 className="text-lg font-bold text-gray-900">Physics AI</h1>
+            <p className="text-xs text-gray-500">物理动画生成器</p>
+          </div>
         </div>
       </div>
 
       {/* 内容区域 */}
-      <div className="flex-1 overflow-hidden bg-gradient-to-b from-transparent to-gray-50/30">
+      <div className="flex-1 overflow-hidden">
         {activeTab === "generate" ? <GenerationForm /> : <HistoryList />}
       </div>
     </div>
