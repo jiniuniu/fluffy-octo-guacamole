@@ -128,117 +128,116 @@ export function AudioPlayer({ record, className = "" }: AudioPlayerProps) {
     return `${minutes}:${seconds.toString().padStart(2, "0")}`;
   };
 
-  const getVoiceTypeDisplay = () => {
-    const voiceType = record.audio_metadata?.voice_type;
-    const voiceNames: Record<string, string> = {
-      Cherry: "甜美女声",
-      Chelsie: "标准女声",
-      Ethan: "标准男声",
-      Serena: "优雅女声",
-      Dylan: "京腔男声",
-      Jada: "吴语女声",
-      Sunny: "川音女声",
-    };
-    return voiceNames[voiceType || ""] || voiceType || "未知";
-  };
-
   return (
     <div className={`w-full ${className}`}>
       <audio ref={audioRef} src={record.audio_url} preload="metadata" />
 
       {/* 播放器容器 - 半透明背景 */}
-      <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg p-3 shadow-lg">
+      <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-full px-4 py-2 shadow-lg">
         {error ? (
-          <div className="text-center text-red-600 text-sm py-2">
+          <div className="text-center text-red-600 text-sm py-1">
             🔇 {error}
           </div>
         ) : (
-          <div className="space-y-2">
-            {/* 主控制行 */}
-            <div className="flex items-center gap-3">
-              {/* 播放/暂停按钮 */}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={togglePlay}
-                disabled={isLoading}
-                className="h-8 w-8 p-0 flex-shrink-0"
-              >
-                {isLoading ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : isPlaying ? (
-                  <Pause className="w-4 h-4" />
-                ) : (
-                  <Play className="w-4 h-4" />
-                )}
-              </Button>
+          <div className="flex items-center gap-3">
+            {/* 播放/暂停按钮 - 半圆形 */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={togglePlay}
+              disabled={isLoading}
+              className="h-8 w-8 p-0 flex-shrink-0 rounded-full border-2 hover:scale-105 transition-transform"
+            >
+              {isLoading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : isPlaying ? (
+                <Pause className="w-4 h-4" />
+              ) : (
+                <Play className="w-4 h-4 ml-0.5" />
+              )}
+            </Button>
 
-              {/* 进度条 */}
-              <div className="flex-1 flex items-center gap-2">
-                <span className="text-xs text-gray-600 font-mono">
-                  {formatTime(currentTime)}
-                </span>
+            {/* 进度条区域 */}
+            <div className="flex-1 flex items-center gap-2">
+              <span className="text-xs text-gray-700 font-mono min-w-[35px]">
+                {formatTime(currentTime)}
+              </span>
+              <div className="flex-1 relative">
                 <input
                   type="range"
                   min="0"
                   max={duration || 0}
                   value={currentTime}
                   onChange={handleSeek}
-                  className="flex-1 h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-                />
-                <span className="text-xs text-gray-600 font-mono">
-                  {formatTime(duration)}
-                </span>
-              </div>
-
-              {/* 音量控制 */}
-              <div className="flex items-center gap-1">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={toggleMute}
-                  className="h-6 w-6 p-0"
-                >
-                  {isMuted ? (
-                    <VolumeX className="w-3 h-3" />
-                  ) : (
-                    <Volume2 className="w-3 h-3" />
-                  )}
-                </Button>
-                <input
-                  type="range"
-                  min="0"
-                  max="1"
-                  step="0.1"
-                  value={isMuted ? 0 : volume}
-                  onChange={handleVolumeChange}
-                  className="w-16 h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                  className="w-full h-2 bg-gray-200 rounded-full appearance-none cursor-pointer
+                    [&::-webkit-slider-thumb]:appearance-none 
+                    [&::-webkit-slider-thumb]:w-4 
+                    [&::-webkit-slider-thumb]:h-4 
+                    [&::-webkit-slider-thumb]:rounded-full 
+                    [&::-webkit-slider-thumb]:bg-blue-500
+                    [&::-webkit-slider-thumb]:cursor-pointer
+                    [&::-webkit-slider-thumb]:shadow-md
+                    [&::-webkit-slider-thumb]:hover:bg-blue-600
+                    [&::-moz-range-thumb]:w-4
+                    [&::-moz-range-thumb]:h-4
+                    [&::-moz-range-thumb]:rounded-full
+                    [&::-moz-range-thumb]:bg-blue-500
+                    [&::-moz-range-thumb]:cursor-pointer
+                    [&::-moz-range-thumb]:border-none"
                 />
               </div>
+              <span className="text-xs text-gray-700 font-mono min-w-[35px]">
+                {formatTime(duration)}
+              </span>
+            </div>
 
-              {/* 下载按钮 */}
+            {/* 音量控制 */}
+            <div className="flex items-center gap-1">
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={handleDownload}
-                className="h-6 w-6 p-0"
-                title="下载音频"
+                onClick={toggleMute}
+                className="h-7 w-7 p-0 rounded-full hover:bg-white/20"
               >
-                <Download className="w-3 h-3" />
+                {isMuted ? (
+                  <VolumeX className="w-3.5 h-3.5" />
+                ) : (
+                  <Volume2 className="w-3.5 h-3.5" />
+                )}
               </Button>
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.1"
+                value={isMuted ? 0 : volume}
+                onChange={handleVolumeChange}
+                className="w-16 h-1.5 bg-gray-200 rounded-full appearance-none cursor-pointer
+                  [&::-webkit-slider-thumb]:appearance-none 
+                  [&::-webkit-slider-thumb]:w-3 
+                  [&::-webkit-slider-thumb]:h-3 
+                  [&::-webkit-slider-thumb]:rounded-full 
+                  [&::-webkit-slider-thumb]:bg-gray-500
+                  [&::-webkit-slider-thumb]:cursor-pointer
+                  [&::-moz-range-thumb]:w-3
+                  [&::-moz-range-thumb]:h-3
+                  [&::-moz-range-thumb]:rounded-full
+                  [&::-moz-range-thumb]:bg-gray-500
+                  [&::-moz-range-thumb]:cursor-pointer
+                  [&::-moz-range-thumb]:border-none"
+              />
             </div>
 
-            {/* 音频信息行 */}
-            <div className="flex items-center justify-between text-xs text-gray-600">
-              <span className="flex items-center gap-1">
-                🎤 {getVoiceTypeDisplay()}
-              </span>
-              {record.audio_metadata && (
-                <span>
-                  {Math.round(record.audio_metadata.file_size / 1024)}KB
-                </span>
-              )}
-            </div>
+            {/* 下载按钮 - 半圆形 */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleDownload}
+              className="h-7 w-7 p-0 rounded-full hover:bg-white/20"
+              title="下载音频"
+            >
+              <Download className="w-3.5 h-3.5" />
+            </Button>
           </div>
         )}
       </div>

@@ -4,6 +4,7 @@
 import { useEffect } from "react";
 import { LeftPanel } from "@/components/LeftPanel";
 import { RightPanel } from "@/components/RightPanel";
+import { ResizablePanels } from "@/components/ResizablePanels";
 import { useAppActions } from "@/lib/store";
 
 export default function HomePage() {
@@ -17,18 +18,15 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      {/* 主体内容 - 双屏布局，占满全屏 */}
-      <div className="flex h-screen">
-        {/* 左侧操作面板 */}
-        <div className="w-80 flex-shrink-0">
-          <LeftPanel />
-        </div>
-
-        {/* 右侧渲染面板 */}
-        <div className="flex-1 border-l border-gray-200">
-          <RightPanel />
-        </div>
-      </div>
+      {/* 主体内容 - 可调整大小的双屏布局 */}
+      <ResizablePanels
+        leftPanel={<LeftPanel />}
+        rightPanel={<RightPanel />}
+        initialLeftWidth={400}
+        minLeftWidth={280}
+        maxLeftWidthPercent={0.6}
+        className="h-screen"
+      />
     </div>
   );
 }
