@@ -5,7 +5,11 @@ import { generationApi, historyApi } from "./api";
 
 interface AppStore {
   // 异步操作状态 - 统一管理
-  asyncOperation: AsyncOperation;
+  asyncOperation: AsyncOperation & {
+    // 新增字段用于传递给 LoadingState
+    enableTts?: boolean;
+    model?: "claude" | "qwen";
+  };
 
   // 数据状态
   selectedRecord: GenerationRecord | null;
@@ -23,7 +27,11 @@ interface AppStore {
   statusFilter: string;
 
   // 基础操作
-  setAsyncOperation: (operation: Partial<AsyncOperation>) => void;
+  setAsyncOperation: (
+    operation: Partial<
+      AsyncOperation & { enableTts?: boolean; model?: "claude" | "qwen" }
+    >
+  ) => void;
   setSelectedRecord: (record: GenerationRecord | null) => void;
   setRecentRecords: (records: GenerationRecord[]) => void;
   setError: (error: string | null) => void;
@@ -62,6 +70,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
     type: null,
     progress: 0,
     currentStep: "",
+    enableTts: undefined,
+    model: undefined,
   },
   selectedRecord: null,
   recentRecords: [],
@@ -99,27 +109,47 @@ export const useAppStore = create<AppStore>((set, get) => ({
         isLoading: true,
         type: "generating",
         progress: 0,
-        currentStep: "📝 正在生成物理解释...",
+        currentStep: "📝 开始生成物理解释...",
+        enableTts, // 传递给 LoadingState
+        model, // 传递给 LoadingState
       });
       set({ error: null });
 
-      // 模拟进度更新
+      // 新的进度更新逻辑 - 基于实际时间阶段
+      let elapsedTime = 0;
+      const totalDuration = enableTts ? 60 : 40; // 总时长（秒）
+
       const progressInterval = setInterval(() => {
-        const current = get().asyncOperation.progress;
-        if (current < 90) {
+        elapsedTime += 1;
+
+        let currentStep = "";
+        let progress = 0;
+
+        if (elapsedTime <= 10) {
+          // 阶段1: 生成物理解释 (0-10秒)
+          currentStep = "📝 正在生成物理解释...";
+          progress = (elapsedTime / totalDuration) * 100;
+        } else if (elapsedTime <= 40) {
+          // 阶段2: 生成SVG动画 (10-40秒)
+          currentStep = "🎨 正在生成SVG动画...";
+          progress = (elapsedTime / totalDuration) * 100;
+        } else if (enableTts && elapsedTime <= 60) {
+          // 阶段3: 生成语音 (40-60秒，仅在启用TTS时)
+          currentStep = "🎤 正在生成语音解释...";
+          progress = (elapsedTime / totalDuration) * 100;
+        } else {
+          // 完成阶段
+          currentStep = "🎯 即将完成...";
+          progress = Math.min(95, (elapsedTime / totalDuration) * 100);
+        }
+
+        if (elapsedTime < totalDuration) {
           setAsyncOperation({
-            progress: current + Math.random() * 15,
-            currentStep:
-              current < 30
-                ? "📝 正在生成物理解释..."
-                : current < 60
-                  ? "🎨 正在生成SVG动画..."
-                  : enableTts
-                    ? "🎤 正在生成语音解释..."
-                    : "🎯 即将完成...",
+            progress,
+            currentStep,
           });
         }
-      }, 500);
+      }, 1000);
 
       const result = await generationApi.generateFull({
         question,
@@ -155,7 +185,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
       setTimeout(() => {
         resetAsyncOperation();
-      }, 1000);
+      }, 1500);
     } catch (error) {
       console.error("Generation failed:", error);
       set({
@@ -178,17 +208,36 @@ export const useAppStore = create<AppStore>((set, get) => ({
         isLoading: true,
         type: "modifying",
         progress: 0,
-        currentStep: "🔧 正在修改动画...",
+        currentStep: "🔧 正在分析修改要求...",
+        model, // 传递给 LoadingState
       });
       set({ error: null });
 
-      // 模拟进度更新
+      // 修改动画的进度逻辑 - 大约30秒
+      let elapsedTime = 0;
+      const totalDuration = 30;
+
       const progressInterval = setInterval(() => {
-        const current = get().asyncOperation.progress;
-        if (current < 90) {
-          setAsyncOperation({ progress: current + Math.random() * 20 });
+        elapsedTime += 1;
+
+        let currentStep = "";
+        const progress = (elapsedTime / totalDuration) * 100;
+
+        if (elapsedTime <= 10) {
+          currentStep = "🔧 正在分析修改要求...";
+        } else if (elapsedTime <= 25) {
+          currentStep = "🎨 正在修改SVG动画...";
+        } else {
+          currentStep = "✨ 正在优化动画效果...";
         }
-      }, 300);
+
+        if (elapsedTime < totalDuration) {
+          setAsyncOperation({
+            progress: Math.min(90, progress),
+            currentStep,
+          });
+        }
+      }, 1000);
 
       const result = await generationApi.modifySvg({
         history_id,
@@ -207,7 +256,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
       setTimeout(() => {
         resetAsyncOperation();
-      }, 1000);
+      }, 1500);
 
       return { svg_code: result.svg_code };
     } catch (error) {
@@ -361,6 +410,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
         type: null,
         progress: 0,
         currentStep: "",
+        enableTts: undefined,
+        model: undefined,
       },
     }),
 }));

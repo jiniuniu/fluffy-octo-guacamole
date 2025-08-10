@@ -9,7 +9,7 @@ import { LoadingState } from "@/components/LoadingState";
 import { EmptyState } from "@/components/EmptyState";
 import { useAppActions, useAppStore } from "@/lib/store";
 
-export default function SimplifiedHomePage() {
+export default function HomePage() {
   const [activeTab, setActiveTab] = useState<"generate" | "history">(
     "generate"
   );
@@ -40,6 +40,12 @@ export default function SimplifiedHomePage() {
             currentStep={store.asyncOperation.currentStep}
             progress={store.asyncOperation.progress}
             type={store.asyncOperation.type}
+            enableTts={store.asyncOperation.enableTts}
+            model={store.asyncOperation.model}
+            onCancel={() => {
+              // 可以添加取消逻辑
+              console.log("用户取消操作");
+            }}
           />
         ) : store.selectedRecord ? (
           <ContentViewer record={store.selectedRecord} />
