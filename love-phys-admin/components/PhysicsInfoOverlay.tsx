@@ -48,7 +48,7 @@ export function PhysicsInfoOverlay({
     if (type === "explanation") {
       return (
         <div className="space-y-3">
-          {/* 物理解释内容 - 移除原始问题部分 */}
+          {/* 物理解释内容 */}
           <div className="bg-white border border-gray-200 rounded-md p-3">
             <div className="flex items-center justify-between mb-2">
               <h4 className="text-xs font-medium text-gray-900 flex items-center gap-1">

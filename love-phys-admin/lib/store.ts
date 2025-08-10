@@ -1,7 +1,10 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // lib/store.ts
 import { create } from "zustand";
+import { useMemo } from "react";
 import { GenerationRecord, AsyncOperation } from "./types";
 import { generationApi, historyApi } from "./api";
+import { TIMING, PAGINATION, ASYNC_OPERATION_TYPES } from "./constants";
 
 interface AppStore {
   // 异步操作状态 - 统一管理
@@ -107,7 +110,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
     try {
       setAsyncOperation({
         isLoading: true,
-        type: "generating",
+        type: ASYNC_OPERATION_TYPES.GENERATING,
         progress: 0,
         currentStep: "📝 开始生成物理解释...",
         enableTts, // 传递给 LoadingState
@@ -117,7 +120,9 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
       // 新的进度更新逻辑 - 基于实际时间阶段
       let elapsedTime = 0;
-      const totalDuration = enableTts ? 60 : 40; // 总时长（秒）
+      const totalDuration = enableTts
+        ? TIMING.GENERATION.WITH_TTS
+        : TIMING.GENERATION.WITHOUT_TTS;
 
       const progressInterval = setInterval(() => {
         elapsedTime += 1;
@@ -125,15 +130,18 @@ export const useAppStore = create<AppStore>((set, get) => ({
         let currentStep = "";
         let progress = 0;
 
-        if (elapsedTime <= 10) {
+        if (elapsedTime <= TIMING.GENERATION.EXPLANATION_PHASE) {
           // 阶段1: 生成物理解释 (0-10秒)
           currentStep = "📝 正在生成物理解释...";
           progress = (elapsedTime / totalDuration) * 100;
-        } else if (elapsedTime <= 40) {
+        } else if (
+          elapsedTime <=
+          TIMING.GENERATION.EXPLANATION_PHASE + TIMING.GENERATION.SVG_PHASE
+        ) {
           // 阶段2: 生成SVG动画 (10-40秒)
           currentStep = "🎨 正在生成SVG动画...";
           progress = (elapsedTime / totalDuration) * 100;
-        } else if (enableTts && elapsedTime <= 60) {
+        } else if (enableTts && elapsedTime <= totalDuration) {
           // 阶段3: 生成语音 (40-60秒，仅在启用TTS时)
           currentStep = "🎤 正在生成语音解释...";
           progress = (elapsedTime / totalDuration) * 100;
@@ -155,7 +163,6 @@ export const useAppStore = create<AppStore>((set, get) => ({
         question,
         model,
         enable_tts: enableTts,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         voice_type: voiceType as any,
       });
 
@@ -206,16 +213,16 @@ export const useAppStore = create<AppStore>((set, get) => ({
     try {
       setAsyncOperation({
         isLoading: true,
-        type: "modifying",
+        type: ASYNC_OPERATION_TYPES.MODIFYING,
         progress: 0,
         currentStep: "🔧 正在分析修改要求...",
         model, // 传递给 LoadingState
       });
       set({ error: null });
 
-      // 修改动画的进度逻辑 - 大约30秒
+      // 修改动画的进度逻辑 - 使用常量配置
       let elapsedTime = 0;
-      const totalDuration = 30;
+      const totalDuration = TIMING.MODIFICATION.TOTAL;
 
       const progressInterval = setInterval(() => {
         elapsedTime += 1;
@@ -223,9 +230,13 @@ export const useAppStore = create<AppStore>((set, get) => ({
         let currentStep = "";
         const progress = (elapsedTime / totalDuration) * 100;
 
-        if (elapsedTime <= 10) {
+        if (elapsedTime <= TIMING.MODIFICATION.ANALYSIS_PHASE) {
           currentStep = "🔧 正在分析修改要求...";
-        } else if (elapsedTime <= 25) {
+        } else if (
+          elapsedTime <=
+          TIMING.MODIFICATION.ANALYSIS_PHASE +
+            TIMING.MODIFICATION.MODIFICATION_PHASE
+        ) {
           currentStep = "🎨 正在修改SVG动画...";
         } else {
           currentStep = "✨ 正在优化动画效果...";
@@ -276,14 +287,13 @@ export const useAppStore = create<AppStore>((set, get) => ({
     try {
       setAsyncOperation({
         isLoading: true,
-        type: "loading",
+        type: ASYNC_OPERATION_TYPES.LOADING,
         currentStep: "📚 加载历史记录...",
       });
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const params: Record<string, any> = {
         page,
-        page_size: 20,
+        page_size: PAGINATION.DEFAULT_PAGE_SIZE,
       };
 
       if (searchQuery) params.keyword = searchQuery;
@@ -387,7 +397,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
   // 工具方法
   addRecord: (record) =>
     set((state) => ({
-      recentRecords: [record, ...state.recentRecords].slice(0, 50),
+      recentRecords: [record, ...state.recentRecords].slice(
+        0,
+        PAGINATION.MAX_RECENT_RECORDS
+      ),
     })),
 
   updateRecordSvg: (id: string, newSvgCode: string) =>
@@ -416,21 +429,39 @@ export const useAppStore = create<AppStore>((set, get) => ({
     }),
 }));
 
-// 单独导出actions
+// 单独导出actions - 使用 useCallback 避免重新创建
 export const useAppActions = () => {
   const store = useAppStore();
-  return {
-    generateFull: store.generateFull,
-    modifySvg: store.modifySvg,
-    loadHistory: store.loadHistory,
-    loadRecordById: store.loadRecordById,
-    deleteRecord: store.deleteRecord,
-    exportRecord: store.exportRecord,
-    setSearchQuery: store.setSearchQuery,
-    setModelFilter: store.setModelFilter,
-    setStatusFilter: store.setStatusFilter,
-    setSelectedRecord: store.setSelectedRecord,
-    updateRecordSvg: store.updateRecordSvg,
-    clearError: store.clearError,
-  };
+
+  // 使用 useMemo 确保 actions 对象的稳定性
+  return useMemo(
+    () => ({
+      generateFull: store.generateFull,
+      modifySvg: store.modifySvg,
+      loadHistory: store.loadHistory,
+      loadRecordById: store.loadRecordById,
+      deleteRecord: store.deleteRecord,
+      exportRecord: store.exportRecord,
+      setSearchQuery: store.setSearchQuery,
+      setModelFilter: store.setModelFilter,
+      setStatusFilter: store.setStatusFilter,
+      setSelectedRecord: store.setSelectedRecord,
+      updateRecordSvg: store.updateRecordSvg,
+      clearError: store.clearError,
+    }),
+    [
+      store.generateFull,
+      store.modifySvg,
+      store.loadHistory,
+      store.loadRecordById,
+      store.deleteRecord,
+      store.exportRecord,
+      store.setSearchQuery,
+      store.setModelFilter,
+      store.setStatusFilter,
+      store.setSelectedRecord,
+      store.updateRecordSvg,
+      store.clearError,
+    ]
+  );
 };

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 // components/SVGPreview.tsx
 "use client";
 
@@ -12,7 +11,7 @@ interface SVGPreviewProps {
   className?: string;
   record?: GenerationRecord;
   onSvgModified?: (newSvgCode: string) => void;
-  // 新增的状态控制属性，用于与 ContentHeader 通信
+  // 状态控制属性，用于与 ContentHeader 通信
   overlayType?: "explanation" | "tech-info" | null;
   onOverlayTypeChange?: (type: "explanation" | "tech-info" | null) => void;
   showModifyDialog?: boolean;
@@ -31,63 +30,9 @@ export function SVGPreview({
 }: SVGPreviewProps) {
   const [error, setError] = useState<string | null>(null);
   const [currentSvgCode, setCurrentSvgCode] = useState(svgCode);
-  const [localOverlayType, setLocalOverlayType] = useState<
-    "explanation" | "tech-info" | null
-  >(null);
-  const [localShowModifyDialog, setLocalShowModifyDialog] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
-  // 音频相关状态 - 现在在 ContentHeader 中控制，这里保留引用
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [isMuted, setIsMuted] = useState(false);
-  const [volume, setVolume] = useState(1);
-  const [audioError, setAudioError] = useState<string | null>(null);
-  const audioRef = useRef<HTMLAudioElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-
-  // 使用外部控制的状态或内部状态
-  const effectiveOverlayType =
-    overlayType !== undefined ? overlayType : localOverlayType;
-  const effectiveShowModifyDialog =
-    showModifyDialog !== undefined ? showModifyDialog : localShowModifyDialog;
-
-  const setOverlayType = onOverlayTypeChange || setLocalOverlayType;
-  const setShowModifyDialog =
-    onShowModifyDialogChange || setLocalShowModifyDialog;
-
-  // 音频播放逻辑 - 保留，但可能需要与 ContentHeader 协调
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio || !record?.audio_url) return;
-
-    const handleLoadStart = () => setAudioError(null);
-    const handleCanPlay = () => setAudioError(null);
-    const handleError = () => {
-      setAudioError("音频加载失败");
-      setIsPlaying(false);
-    };
-    const handleEnded = () => setIsPlaying(false);
-
-    audio.addEventListener("loadstart", handleLoadStart);
-    audio.addEventListener("canplay", handleCanPlay);
-    audio.addEventListener("error", handleError);
-    audio.addEventListener("ended", handleEnded);
-
-    return () => {
-      audio.removeEventListener("loadstart", handleLoadStart);
-      audio.removeEventListener("canplay", handleCanPlay);
-      audio.removeEventListener("error", handleError);
-      audio.removeEventListener("ended", handleEnded);
-    };
-  }, [record?.audio_url]);
-
-  // 控制音频音量
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-
-    audio.volume = isMuted ? 0 : volume;
-  }, [isMuted, volume]);
 
   // 当外部svgCode变化时，更新内部状态
   useEffect(() => {
@@ -106,6 +51,7 @@ export function SVGPreview({
     };
   }, []);
 
+  // SVG渲染逻辑
   useEffect(() => {
     if (!containerRef.current || !currentSvgCode) return;
 
@@ -145,19 +91,6 @@ export function SVGPreview({
     }
   };
 
-  // 这些函数现在主要是为了向后兼容，实际控制逻辑在 ContentHeader 中
-  const handleShowExplanation = () => {
-    setOverlayType("explanation");
-  };
-
-  const handleShowTechInfo = () => {
-    setOverlayType("tech-info");
-  };
-
-  const handleModifyAnimation = () => {
-    setShowModifyDialog(true);
-  };
-
   if (error) {
     return (
       <div
@@ -186,12 +119,7 @@ export function SVGPreview({
 
   return (
     <div className={`w-full h-full relative ${className}`}>
-      {/* 隐藏的音频元素 */}
-      {record?.audio_url && (
-        <audio ref={audioRef} src={record.audio_url} preload="metadata" />
-      )}
-
-      {/* SVG容器 - 根据全屏状态调整背景 */}
+      {/* SVG容器 */}
       <div
         className={`h-full rounded-2xl border flex items-center justify-center relative overflow-hidden shadow-lg ${
           isFullscreen
@@ -206,25 +134,25 @@ export function SVGPreview({
         />
       </div>
 
-      {/* 信息覆盖层 - 弹窗样式 */}
-      {record && effectiveOverlayType && (
+      {/* 信息覆盖层 */}
+      {record && overlayType && onOverlayTypeChange && (
         <div className="absolute top-4 right-4 z-30">
           <PhysicsInfoOverlay
             record={record}
-            type={effectiveOverlayType}
+            type={overlayType}
             isOpen={true}
-            onClose={() => setOverlayType(null)}
+            onClose={() => onOverlayTypeChange(null)}
           />
         </div>
       )}
 
       {/* 修改动画对话框 */}
-      {record && (
+      {record && showModifyDialog !== undefined && onShowModifyDialogChange && (
         <SVGModifyDialog
           record={record}
           onModified={handleSvgModified}
-          open={effectiveShowModifyDialog}
-          onOpenChange={setShowModifyDialog}
+          open={showModifyDialog}
+          onOpenChange={onShowModifyDialogChange}
         />
       )}
     </div>

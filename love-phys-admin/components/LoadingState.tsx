@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 // components/LoadingState.tsx
 "use client";
 
@@ -35,7 +34,6 @@ interface WorkflowStep {
 
 export function LoadingState({
   currentStep,
-  progress,
   type,
   enableTts = true,
   model = "claude",
@@ -77,8 +75,6 @@ export function LoadingState({
     ],
     [enableTts]
   );
-
-  const totalDuration = useMemo(() => (enableTts ? 60 : 40), [enableTts]);
 
   // 计时器
   useEffect(() => {
@@ -183,7 +179,7 @@ export function LoadingState({
                 {/* 连接线 */}
                 <div className="absolute top-6 left-0 right-0 h-0.5 bg-gray-200"></div>
 
-                {workflowSteps.map((step, index) => {
+                {workflowSteps.map((step) => {
                   const status = getStepStatus(step);
 
                   return (

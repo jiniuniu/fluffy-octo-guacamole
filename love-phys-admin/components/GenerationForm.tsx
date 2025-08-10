@@ -7,6 +7,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useAppStore, useAppActions } from "@/lib/store";
 import {
+  MODELS,
+  MODEL_CONFIG,
+  VOICE_OPTIONS,
+  VALIDATION,
+  ASYNC_OPERATION_TYPES,
+} from "@/lib/constants";
+import {
   ChevronDown,
   Mic,
   MicOff,
@@ -26,7 +33,7 @@ import {
 export function GenerationForm() {
   const [question, setQuestion] = useState("");
   const [selectedModel, setSelectedModel] = useState<"claude" | "qwen">(
-    "claude"
+    MODELS.CLAUDE
   );
   const [enableTts, setEnableTts] = useState(true);
   const [voiceType, setVoiceType] = useState("Cherry");
@@ -36,17 +43,7 @@ export function GenerationForm() {
 
   const isGenerating =
     store.asyncOperation.isLoading &&
-    store.asyncOperation.type === "generating";
-
-  const voiceOptions = [
-    { id: "Cherry", name: "Cherry", description: "甜美女声" },
-    { id: "Chelsie", name: "Chelsie", description: "标准女声" },
-    { id: "Serena", name: "Serena", description: "优雅女声" },
-    { id: "Ethan", name: "Ethan", description: "标准男声" },
-    { id: "Dylan", name: "Dylan", description: "京腔男声" },
-    { id: "Jada", name: "Jada", description: "吴语女声" },
-    { id: "Sunny", name: "Sunny", description: "川音女声" },
-  ];
+    store.asyncOperation.type === ASYNC_OPERATION_TYPES.GENERATING;
 
   const handleGenerate = async () => {
     if (!question.trim() || isGenerating) return;
@@ -60,7 +57,8 @@ export function GenerationForm() {
     );
 
     // 只有成功时才清空输入框
-    if (!useAppStore.getState().error) {
+    const currentState = useAppStore.getState();
+    if (!currentState.error) {
       setQuestion("");
     }
   };
@@ -72,7 +70,8 @@ export function GenerationForm() {
     }
   };
 
-  const isFormValid = question.trim().length >= 5 && !isGenerating;
+  const isFormValid =
+    question.trim().length >= VALIDATION.MIN_QUESTION_LENGTH && !isGenerating;
 
   return (
     <div className="p-4 space-y-4">
@@ -121,10 +120,13 @@ export function GenerationForm() {
 
             {/* 字符计数 - 移到左下角 */}
             <div className="absolute bottom-3 left-4 text-xs text-gray-500">
-              {question.length}/500
-              {question.length > 0 && question.length < 5 && (
-                <span className="text-orange-600 ml-1">(最少5个字符)</span>
-              )}
+              {question.length}/{VALIDATION.MAX_QUESTION_LENGTH}
+              {question.length > 0 &&
+                question.length < VALIDATION.MIN_QUESTION_LENGTH && (
+                  <span className="text-orange-600 ml-1">
+                    (最少{VALIDATION.MIN_QUESTION_LENGTH}个字符)
+                  </span>
+                )}
             </div>
           </div>
 
@@ -139,10 +141,10 @@ export function GenerationForm() {
                   className="w-full justify-between h-10 rounded-xl border-gray-200 text-sm hover:bg-gray-50 transition-all"
                 >
                   <div className="flex items-center gap-2">
-                    {selectedModel === "claude" ? (
+                    {selectedModel === MODELS.CLAUDE ? (
                       <>
                         <Sparkles className="w-4 h-4 text-purple-600" />
-                        <span>Claude Sonnet 4</span>
+                        <span>{MODEL_CONFIG[MODELS.CLAUDE].displayName}</span>
                         <span className="text-xs text-gray-500">
                           • 推荐使用
                         </span>
@@ -150,7 +152,7 @@ export function GenerationForm() {
                     ) : (
                       <>
                         <Zap className="w-4 h-4 text-blue-600" />
-                        <span>Qwen Coder Plus</span>
+                        <span>{MODEL_CONFIG[MODELS.QWEN].displayName}</span>
                         <span className="text-xs text-gray-500">
                           • 响应更快
                         </span>
@@ -162,37 +164,41 @@ export function GenerationForm() {
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-80">
                 <DropdownMenuItem
-                  onClick={() => setSelectedModel("claude")}
+                  onClick={() => setSelectedModel(MODELS.CLAUDE)}
                   className={`flex items-center gap-3 p-3 ${
-                    selectedModel === "claude" ? "bg-purple-50" : ""
+                    selectedModel === MODELS.CLAUDE ? "bg-purple-50" : ""
                   }`}
                 >
                   <Sparkles className="w-4 h-4 text-purple-600" />
                   <div className="flex-1">
-                    <div className="font-medium text-sm">Claude Sonnet 4</div>
+                    <div className="font-medium text-sm">
+                      {MODEL_CONFIG[MODELS.CLAUDE].displayName}
+                    </div>
                     <div className="text-xs text-gray-500">
-                      推荐使用，质量更高，响应详细
+                      {MODEL_CONFIG[MODELS.CLAUDE].description}
                     </div>
                   </div>
-                  {selectedModel === "claude" && (
+                  {selectedModel === MODELS.CLAUDE && (
                     <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
                   )}
                 </DropdownMenuItem>
 
                 <DropdownMenuItem
-                  onClick={() => setSelectedModel("qwen")}
+                  onClick={() => setSelectedModel(MODELS.QWEN)}
                   className={`flex items-center gap-3 p-3 ${
-                    selectedModel === "qwen" ? "bg-blue-50" : ""
+                    selectedModel === MODELS.QWEN ? "bg-blue-50" : ""
                   }`}
                 >
                   <Zap className="w-4 h-4 text-blue-600" />
                   <div className="flex-1">
-                    <div className="font-medium text-sm">Qwen Coder Plus</div>
+                    <div className="font-medium text-sm">
+                      {MODEL_CONFIG[MODELS.QWEN].displayName}
+                    </div>
                     <div className="text-xs text-gray-500">
-                      响应更快，成本较低，适合简单问题
+                      {MODEL_CONFIG[MODELS.QWEN].description}
                     </div>
                   </div>
-                  {selectedModel === "qwen" && (
+                  {selectedModel === MODELS.QWEN && (
                     <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
                   )}
                 </DropdownMenuItem>
@@ -275,7 +281,7 @@ export function GenerationForm() {
                     <div className="px-3 py-2 text-xs font-medium text-gray-500">
                       选择声音类型
                     </div>
-                    {voiceOptions.map((voice) => (
+                    {VOICE_OPTIONS.map((voice) => (
                       <DropdownMenuItem
                         key={voice.id}
                         onClick={() => setVoiceType(voice.id)}

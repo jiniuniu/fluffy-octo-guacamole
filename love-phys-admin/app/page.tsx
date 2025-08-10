@@ -6,7 +6,7 @@ import { VerticalNavigation } from "@/components/VerticalNavigation";
 import { LeftPanel } from "@/components/LeftPanel";
 import { ContentViewer } from "@/components/ContentViewer";
 import { LoadingState } from "@/components/LoadingState";
-import { EmptyState } from "@/components/EmptyState";
+import { StateDisplay } from "@/components/StateDisplay";
 import { useAppActions, useAppStore } from "@/lib/store";
 
 export default function HomePage() {
@@ -50,7 +50,11 @@ export default function HomePage() {
         ) : store.selectedRecord ? (
           <ContentViewer record={store.selectedRecord} />
         ) : (
-          <EmptyState />
+          <StateDisplay
+            type="empty"
+            title="开始生成新内容"
+            description="在左侧输入物理问题并选择模型，或选择历史记录查看内容"
+          />
         )}
       </div>
     </div>

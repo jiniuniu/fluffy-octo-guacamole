@@ -1,4 +1,4 @@
-// components/UpdatedSVGModifyDialog.tsx
+// components/SVGModifyDialog.tsx
 "use client";
 
 import { useState, ReactNode } from "react";
@@ -128,13 +128,15 @@ export function SVGModifyDialog({
               选择AI模型
             </label>
             <div className="grid grid-cols-1 gap-2">
-              <div
+              <button
+                type="button"
                 onClick={() => !isModifying && setSelectedModel("claude")}
-                className={`p-2 border rounded-lg cursor-pointer transition-colors text-sm ${
+                className={`p-2 border rounded-lg cursor-pointer transition-colors text-sm text-left ${
                   selectedModel === "claude"
                     ? "border-blue-500 bg-blue-50"
                     : "border-gray-200 hover:border-gray-300"
                 } ${isModifying ? "opacity-50 cursor-not-allowed" : ""}`}
+                disabled={isModifying}
               >
                 <div className="flex items-center gap-2">
                   <div
@@ -155,15 +157,17 @@ export function SVGModifyDialog({
                     </div>
                   </div>
                 </div>
-              </div>
+              </button>
 
-              <div
+              <button
+                type="button"
                 onClick={() => !isModifying && setSelectedModel("qwen")}
-                className={`p-2 border rounded-lg cursor-pointer transition-colors text-sm ${
+                className={`p-2 border rounded-lg cursor-pointer transition-colors text-sm text-left ${
                   selectedModel === "qwen"
                     ? "border-blue-500 bg-blue-50"
                     : "border-gray-200 hover:border-gray-300"
                 } ${isModifying ? "opacity-50 cursor-not-allowed" : ""}`}
+                disabled={isModifying}
               >
                 <div className="flex items-center gap-2">
                   <div
@@ -184,7 +188,7 @@ export function SVGModifyDialog({
                     </div>
                   </div>
                 </div>
-              </div>
+              </button>
             </div>
           </div>
 

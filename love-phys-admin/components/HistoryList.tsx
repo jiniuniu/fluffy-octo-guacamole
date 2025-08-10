@@ -4,20 +4,19 @@
 import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { StateDisplay } from "./StateDisplay";
 import { useAppStore, useAppActions } from "@/lib/store";
 import { useDebounce } from "@/hooks/useDebounce";
+import { getTimeAgo, getModelName } from "@/lib/utils";
 import {
   Search,
   CheckCircle2,
   XCircle,
   Clock,
   HelpCircle,
-  RefreshCw,
-  FileText,
   ChevronLeft,
   ChevronRight,
   Calendar,
-  AlertTriangle,
   Sparkles,
   Zap,
   Mic,
@@ -46,18 +45,6 @@ export function HistoryList() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSearchQuery]);
 
-  const getTimeAgo = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffInMs = now.getTime() - date.getTime();
-    const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
-
-    if (diffInMinutes < 1) return "刚刚";
-    if (diffInMinutes < 60) return `${diffInMinutes}分钟前`;
-    if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}小时前`;
-    return `${Math.floor(diffInMinutes / 1440)}天前`;
-  };
-
   const getStatusIcon = (status: string) => {
     switch (status) {
       case "success":
@@ -80,10 +67,6 @@ export function HistoryList() {
       default:
         return <span className="text-sm">🤖</span>;
     }
-  };
-
-  const getModelName = (model: string) => {
-    return model === "claude" ? "Claude" : "Qwen";
   };
 
   return (
@@ -122,33 +105,21 @@ export function HistoryList() {
       <div className="flex-1 px-4 pb-4 overflow-hidden">
         <div className="h-full overflow-y-auto">
           {store.error ? (
-            <div className="flex flex-col items-center justify-center h-full space-y-3">
-              <AlertTriangle className="w-10 h-10 text-red-500" />
-              <div className="text-red-600 text-sm text-center">
-                {store.error}
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => actions.loadHistory(store.currentPage)}
-                className="flex items-center gap-2"
-              >
-                <RefreshCw className="w-4 h-4" />
-                重试
-              </Button>
-            </div>
+            <StateDisplay
+              type="error"
+              title="加载失败"
+              description={store.error}
+              onRefresh={() => actions.loadHistory(store.currentPage)}
+            />
           ) : store.recentRecords.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-gray-500">
-              <FileText className="w-12 h-12 text-gray-300 mb-3" />
-              <div className="text-sm text-center">
-                {store.searchQuery ? "未找到匹配记录" : "暂无历史记录"}
-              </div>
-              {!store.searchQuery && (
-                <div className="text-xs text-gray-400 mt-2 text-center">
-                  开始生成你的第一个物理动画吧！
-                </div>
-              )}
-            </div>
+            <StateDisplay
+              type={store.searchQuery ? "no-results" : "empty"}
+              title={store.searchQuery ? "未找到匹配记录" : "暂无历史记录"}
+              description={
+                store.searchQuery ? undefined : "开始生成你的第一个物理动画吧！"
+              }
+              emoji={store.searchQuery ? "🔍" : "📚"}
+            />
           ) : (
             <div className="space-y-2 pb-2">
               {store.recentRecords.map((record) => (
