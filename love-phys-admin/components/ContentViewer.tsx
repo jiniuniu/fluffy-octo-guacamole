@@ -1,11 +1,12 @@
 // components/ContentViewer.tsx
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Copy, Eye, EyeOff } from "lucide-react";
+import { Copy } from "lucide-react";
 import { SVGPreview } from "./SVGPreview";
+import { ContentHeader } from "./ContentHeader";
 import { useAppStore, useAppActions } from "@/lib/store";
 import { GenerationRecord } from "@/lib/types";
 
@@ -15,7 +16,21 @@ interface ContentViewerProps {
 
 export function ContentViewer({ record }: ContentViewerProps) {
   const [currentRecord, setCurrentRecord] = useState(record);
-  const [showDock, setShowDock] = useState(true); // 新增：控制dock显示状态
+
+  // 音频控制状态
+  const [showAudio, setShowAudio] = useState(true);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const audioRef = useRef<HTMLAudioElement>(null);
+
+  // 覆盖层和对话框状态
+  const [overlayType, setOverlayType] = useState<
+    "explanation" | "tech-info" | null
+  >(null);
+  const [showModifyDialog, setShowModifyDialog] = useState(false);
+
+  // SVG容器引用，用于全屏
+  const svgContainerRef = useRef<HTMLDivElement>(null);
+
   const store = useAppStore();
   const actions = useAppActions();
 
@@ -45,6 +60,69 @@ export function ContentViewer({ record }: ContentViewerProps) {
       svg_code: newSvgCode,
     }));
     actions.updateRecordSvg(currentRecord.id, newSvgCode);
+  };
+
+  // 下载处理
+  const handleDownload = () => {
+    const blob = new Blob([currentRecord.svg_code], { type: "image/svg+xml" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `physics_animation_${currentRecord.id}.svg`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  // 下载音频
+  const handleDownloadAudio = () => {
+    if (currentRecord.audio_url) {
+      const link = document.createElement("a");
+      link.href = currentRecord.audio_url;
+      link.download = `physics_audio_${currentRecord.id}.wav`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  };
+
+  // 音频播放控制
+  const handleTogglePlayback = async () => {
+    const audio = audioRef.current;
+    if (!audio || !currentRecord.audio_url) return;
+
+    try {
+      if (isPlaying) {
+        audio.pause();
+        setIsPlaying(false);
+      } else {
+        await audio.play();
+        setIsPlaying(true);
+      }
+    } catch (err) {
+      console.error("音频播放失败:", err);
+      setIsPlaying(false);
+    }
+  };
+
+  // 音量控制
+  const handleToggleAudio = () => {
+    setShowAudio(!showAudio);
+    if (audioRef.current) {
+      audioRef.current.muted = showAudio; // 切换静音状态
+    }
+  };
+
+  // 全屏切换 - 针对 SVG 容器
+  const handleFullscreen = () => {
+    if (!svgContainerRef.current) return;
+
+    if (!document.fullscreenElement) {
+      svgContainerRef.current.requestFullscreen?.();
+    } else {
+      document.exitFullscreen?.();
+    }
   };
 
   // 失败状态显示
@@ -106,6 +184,17 @@ export function ContentViewer({ record }: ContentViewerProps) {
   // 成功状态显示 - 沉浸式布局
   return (
     <div className="h-full bg-white overflow-hidden relative">
+      {/* 隐藏的音频元素 */}
+      {currentRecord.audio_url && (
+        <audio
+          ref={audioRef}
+          src={currentRecord.audio_url}
+          preload="metadata"
+          onEnded={() => setIsPlaying(false)}
+          onError={() => setIsPlaying(false)}
+        />
+      )}
+
       {/* 错误提示 - 如果有的话 */}
       {store.error && (
         <div className="absolute top-4 left-4 right-4 z-50">
@@ -136,63 +225,32 @@ export function ContentViewer({ record }: ContentViewerProps) {
 
       {/* 布局容器 - 避免重叠 */}
       <div className="h-full flex flex-col">
-        {/* 标题区域 - 固定高度，不重叠 */}
-        <div className="flex-shrink-0 p-6 pb-3">
-          <div className="backdrop-blur-xl bg-white/20 border border-white/30 rounded-2xl px-6 py-4 shadow-lg">
-            <div className="flex items-center justify-between">
-              <div className="flex-1 min-w-0">
-                <h2 className="text-lg font-semibold text-gray-900 truncate pr-4">
-                  {currentRecord.question}
-                </h2>
-                <div className="flex items-center gap-3 mt-2">
-                  <div className="flex items-center gap-1 text-xs text-gray-600">
-                    <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                    <span>
-                      {currentRecord.model === "claude" ? "Claude" : "Qwen"}
-                    </span>
-                  </div>
-                  {currentRecord.audio_url && (
-                    <div className="flex items-center gap-1 text-xs text-gray-600">
-                      <span>🎤</span>
-                      <span>音频</span>
-                    </div>
-                  )}
-                  <div className="text-xs text-gray-500">
-                    {new Date(currentRecord.created_at).toLocaleDateString(
-                      "zh-CN"
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* 控制面板显示/隐藏按钮 */}
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowDock(!showDock)}
-                  className="h-8 w-8 p-0 bg-white/40 hover:bg-white/60 border border-white/40 backdrop-blur-sm"
-                  title={showDock ? "隐藏控制面板" : "显示控制面板"}
-                >
-                  {showDock ? (
-                    <EyeOff className="w-4 h-4 text-gray-700" />
-                  ) : (
-                    <Eye className="w-4 h-4 text-gray-700" />
-                  )}
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
+        {/* 头部区域 - 使用新的 ContentHeader 组件 */}
+        <ContentHeader
+          record={currentRecord}
+          showAudio={showAudio}
+          isPlaying={isPlaying}
+          onToggleAudio={handleToggleAudio}
+          onTogglePlayback={handleTogglePlayback}
+          onShowExplanation={() => setOverlayType("explanation")}
+          onShowTechInfo={() => setOverlayType("tech-info")}
+          onModifyAnimation={() => setShowModifyDialog(true)}
+          onFullscreen={handleFullscreen}
+          onDownload={handleDownload}
+          onDownloadAudio={handleDownloadAudio}
+        />
 
         {/* SVG动画区域 - 填充剩余空间，左右padding与标题一致 */}
-        <div className="flex-1 px-6 pb-6">
+        <div ref={svgContainerRef} className="flex-1 px-6 pb-6">
           <SVGPreview
             svgCode={currentRecord.svg_code}
             className="w-full h-full"
             record={currentRecord}
             onSvgModified={handleSvgModified}
-            showDock={showDock}
+            overlayType={overlayType}
+            onOverlayTypeChange={setOverlayType}
+            showModifyDialog={showModifyDialog}
+            onShowModifyDialogChange={setShowModifyDialog}
           />
         </div>
       </div>

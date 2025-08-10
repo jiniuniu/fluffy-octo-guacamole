@@ -3,7 +3,6 @@
 "use client";
 
 import { useRef, useEffect, useState } from "react";
-import { FloatingActionDock } from "./FloatingActionDock";
 import { PhysicsInfoOverlay } from "./PhysicsInfoOverlay";
 import { SVGModifyDialog } from "./SVGModifyDialog";
 import { GenerationRecord } from "@/lib/types";
@@ -13,7 +12,11 @@ interface SVGPreviewProps {
   className?: string;
   record?: GenerationRecord;
   onSvgModified?: (newSvgCode: string) => void;
-  showDock?: boolean; // 新增：控制dock显示
+  // 新增的状态控制属性，用于与 ContentHeader 通信
+  overlayType?: "explanation" | "tech-info" | null;
+  onOverlayTypeChange?: (type: "explanation" | "tech-info" | null) => void;
+  showModifyDialog?: boolean;
+  onShowModifyDialogChange?: (show: boolean) => void;
 }
 
 export function SVGPreview({
@@ -21,18 +24,20 @@ export function SVGPreview({
   className = "",
   record,
   onSvgModified,
-  showDock = true, // 默认显示dock
+  overlayType,
+  onOverlayTypeChange,
+  showModifyDialog,
+  onShowModifyDialogChange,
 }: SVGPreviewProps) {
   const [error, setError] = useState<string | null>(null);
   const [currentSvgCode, setCurrentSvgCode] = useState(svgCode);
-  const [overlayType, setOverlayType] = useState<
+  const [localOverlayType, setLocalOverlayType] = useState<
     "explanation" | "tech-info" | null
   >(null);
-  const [showAudio, setShowAudio] = useState(true);
+  const [localShowModifyDialog, setLocalShowModifyDialog] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [showModifyDialog, setShowModifyDialog] = useState(false);
 
-  // 音频控制状态
+  // 音频相关状态 - 现在在 ContentHeader 中控制，这里保留引用
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [volume, setVolume] = useState(1);
@@ -40,7 +45,17 @@ export function SVGPreview({
   const audioRef = useRef<HTMLAudioElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // 音频播放逻辑 - 参考 AudioPlayer
+  // 使用外部控制的状态或内部状态
+  const effectiveOverlayType =
+    overlayType !== undefined ? overlayType : localOverlayType;
+  const effectiveShowModifyDialog =
+    showModifyDialog !== undefined ? showModifyDialog : localShowModifyDialog;
+
+  const setOverlayType = onOverlayTypeChange || setLocalOverlayType;
+  const setShowModifyDialog =
+    onShowModifyDialogChange || setLocalShowModifyDialog;
+
+  // 音频播放逻辑 - 保留，但可能需要与 ContentHeader 协调
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio || !record?.audio_url) return;
@@ -130,69 +145,17 @@ export function SVGPreview({
     }
   };
 
-  // 切换音频播放器显示状态
-  const handleToggleAudioVisibility = () => {
-    setShowAudio(!showAudio);
+  // 这些函数现在主要是为了向后兼容，实际控制逻辑在 ContentHeader 中
+  const handleShowExplanation = () => {
+    setOverlayType("explanation");
   };
 
-  // 全屏切换
-  const handleFullscreen = () => {
-    if (!document.fullscreenElement) {
-      containerRef.current?.requestFullscreen?.();
-      setIsFullscreen(true);
-    } else {
-      document.exitFullscreen();
-      setIsFullscreen(false);
-    }
+  const handleShowTechInfo = () => {
+    setOverlayType("tech-info");
   };
 
-  // 下载处理
-  const handleDownload = () => {
-    const blob = new Blob([currentSvgCode], { type: "image/svg+xml" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `physics_animation_${record?.id || "download"}.svg`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  };
-
-  // 音频播放控制
-  const handleTogglePlayback = async () => {
-    const audio = audioRef.current;
-    if (!audio || !record?.audio_url) return;
-
-    try {
-      if (isPlaying) {
-        audio.pause();
-        setIsPlaying(false);
-      } else {
-        await audio.play();
-        setIsPlaying(true);
-      }
-    } catch (err) {
-      setAudioError("播放失败");
-      setIsPlaying(false);
-    }
-  };
-
-  // 音量控制
-  const handleToggleAudio = () => {
-    setIsMuted(!isMuted);
-  };
-
-  // 下载音频
-  const handleDownloadAudio = () => {
-    if (record?.audio_url) {
-      const link = document.createElement("a");
-      link.href = record.audio_url;
-      link.download = `physics_audio_${record.id}.wav`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    }
+  const handleModifyAnimation = () => {
+    setShowModifyDialog(true);
   };
 
   if (error) {
@@ -243,31 +206,12 @@ export function SVGPreview({
         />
       </div>
 
-      {/* 悬浮操作dock - 只在showDock为true且状态为success时显示 */}
-      {record && record.status === "success" && showDock && (
-        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-20">
-          <FloatingActionDock
-            record={record}
-            showAudio={!isMuted}
-            isPlaying={isPlaying}
-            onToggleAudio={handleToggleAudio}
-            onTogglePlayback={handleTogglePlayback}
-            onShowExplanation={() => setOverlayType("explanation")}
-            onShowTechInfo={() => setOverlayType("tech-info")}
-            onModifyAnimation={() => setShowModifyDialog(true)}
-            onFullscreen={handleFullscreen}
-            onDownload={handleDownload}
-            onDownloadAudio={handleDownloadAudio}
-          />
-        </div>
-      )}
-
       {/* 信息覆盖层 - 弹窗样式 */}
-      {record && overlayType && (
+      {record && effectiveOverlayType && (
         <div className="absolute top-4 right-4 z-30">
           <PhysicsInfoOverlay
             record={record}
-            type={overlayType}
+            type={effectiveOverlayType}
             isOpen={true}
             onClose={() => setOverlayType(null)}
           />
@@ -279,7 +223,7 @@ export function SVGPreview({
         <SVGModifyDialog
           record={record}
           onModified={handleSvgModified}
-          open={showModifyDialog}
+          open={effectiveShowModifyDialog}
           onOpenChange={setShowModifyDialog}
         />
       )}
