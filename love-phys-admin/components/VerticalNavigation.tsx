@@ -1,8 +1,9 @@
 // components/VerticalNavigation.tsx
 "use client";
 
-import { Settings, Plus, History, Sparkles } from "lucide-react";
+import { Settings, Plus, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import Image from "next/image";
 import {
   Tooltip,
   TooltipContent,
@@ -23,9 +24,15 @@ export function VerticalNavigation({
     <TooltipProvider>
       <div className="w-16 bg-white/80 backdrop-blur-sm border-r border-gray-200 flex flex-col items-center py-6 shadow-sm">
         {/* Logo区域 */}
-        <div className="mb-8">
-          <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-md">
-            <Sparkles className="w-5 h-5 text-white" />
+        <div className="mb-12">
+          <div className="w-8 h-8 flex items-center justify-center">
+            <Image
+              src="/logo.svg"
+              alt="Logo"
+              width={30}
+              height={30}
+              className="w-full h-full"
+            />
           </div>
         </div>
 
@@ -61,7 +68,7 @@ export function VerticalNavigation({
                 onClick={() => onTabChange("history")}
                 className={`w-12 h-12 p-0 rounded-full transition-all duration-200 flex items-center justify-center ${
                   activeTab === "history"
-                    ? "bg-purple-600 hover:bg-purple-700 text-white shadow-lg scale-105"
+                    ? "bg-blue-600 hover:bg-blue-700 text-white shadow-lg scale-105"
                     : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
                 }`}
               >
