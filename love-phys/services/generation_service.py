@@ -1,6 +1,5 @@
 # services/generation_service.py
 import logging
-import uuid
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -14,7 +13,6 @@ from core.chains import (
 )
 from core.llm import get_llm
 from db.models import GenerationStatus
-from langchain_core.runnables import Runnable
 from services.history_service import HistoryService
 from services.storage_service import QiniuStorageService
 from services.tts_service import TTSService
@@ -25,8 +23,6 @@ logger = logging.getLogger(__name__)
 class GenerationService:
     def __init__(self, history_service: HistoryService):
         self.history_service = history_service
-        # 统一的chains缓存：{model-chain_type: chain}
-        self.chains: Dict[str, Runnable] = {}
 
         # 初始化TTS和存储服务
         self.tts_service = None
@@ -56,23 +52,18 @@ class GenerationService:
             self.storage_service = None
 
     def get_chain(self, model: str, chain_type: str):
-        """获取或创建指定类型的chain - 扩展支持modify类型"""
-        cache_key = f"{model}-{chain_type}"
+        """获取或创建指定类型的chain - 每次都创建新实例"""
+        logger.info(f"创建新的chain: {model}-{chain_type}")
+        llm = get_llm(model=model)
 
-        if cache_key not in self.chains:
-            logger.info(f"创建新的chain: {cache_key}")
-            llm = get_llm(model=model)
-
-            if chain_type == "content":
-                self.chains[cache_key] = create_content_chain(llm)
-            elif chain_type == "svg":
-                self.chains[cache_key] = create_svg_chain(llm)
-            elif chain_type == "svg_modify":
-                self.chains[cache_key] = create_svg_modify_chain(llm)
-            else:
-                raise ValueError(f"未知的chain类型: {chain_type}")
-
-        return self.chains[cache_key]
+        if chain_type == "content":
+            return create_content_chain(llm)
+        elif chain_type == "svg":
+            return create_svg_chain(llm)
+        elif chain_type == "svg_modify":
+            return create_svg_modify_chain(llm)
+        else:
+            raise ValueError(f"未知的chain类型: {chain_type}")
 
     async def generate_full_with_history(
         self,
@@ -214,50 +205,9 @@ class GenerationService:
         """检查是否具备音频生成能力"""
         return self.tts_service is not None and self.storage_service is not None
 
-    def clear_cache(
-        self, model: Optional[str] = None, chain_type: Optional[str] = None
-    ):
-        """清理缓存"""
-        if model and chain_type:
-            # 清理特定的chain
-            cache_key = f"{model}-{chain_type}"
-            if cache_key in self.chains:
-                del self.chains[cache_key]
-                logger.info(f"清理特定chain缓存: {cache_key}")
-        elif model:
-            # 清理特定模型的所有chains
-            keys_to_remove = [
-                key for key in self.chains.keys() if key.startswith(f"{model}-")
-            ]
-            for key in keys_to_remove:
-                del self.chains[key]
-            logger.info(f"清理模型所有chains: {model}")
-        elif chain_type:
-            # 清理特定类型的所有chains
-            keys_to_remove = [
-                key for key in self.chains.keys() if key.endswith(f"-{chain_type}")
-            ]
-            for key in keys_to_remove:
-                del self.chains[key]
-            logger.info(f"清理类型所有chains: {chain_type}")
-        else:
-            # 清理所有缓存
-            self.chains.clear()
-            logger.info("清理所有chain缓存")
-
     def get_cache_info(self) -> Dict[str, Any]:
-        """获取缓存信息"""
-        cached_chains = list(self.chains.keys())
-        models = set()
-        chain_types = set()
-
-        for key in cached_chains:
-            if "-" in key:
-                model, chain_type = key.split("-", 1)
-                models.add(model)
-                chain_types.add(chain_type)
-
-        # 添加服务状态信息
+        """获取服务状态信息"""
+        # 只保留服务状态信息
         service_status = {
             "tts_available": self.tts_service is not None,
             "storage_available": self.storage_service is not None,
@@ -265,10 +215,6 @@ class GenerationService:
         }
 
         return {
-            "cached_chains": cached_chains,
-            "cached_models": list(models),
-            "cached_chain_types": list(chain_types),
-            "total_cached": len(cached_chains),
             "service_status": service_status,
         }
 
