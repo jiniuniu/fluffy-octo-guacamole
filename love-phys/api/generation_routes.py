@@ -35,6 +35,7 @@ async def generate_full(
             await generation_service.generate_full_with_history(
                 question=request.question,
                 model=request.model,
+                svg_type=request.svg_type,
                 enable_tts=request.enable_tts,
                 voice_type=request.voice_type.value,
             )

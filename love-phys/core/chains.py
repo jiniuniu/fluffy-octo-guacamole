@@ -2,6 +2,7 @@ from core.prompts import (
     CONTENT_PROMPT_TEMPLATE,
     SVG_MODIFY_PROMPT_TEMPLATE,
     SVG_PROMPT_TEMPLATE,
+    SVG_PROMPT_TEMPLATE_STATIC,
 )
 from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.prompts import PromptTemplate
@@ -36,17 +37,22 @@ class SVGGeneration(BaseModel):
     svgCode: str = Field(min_length=100, description="SVG代码必须有实质内容")
 
 
-def create_svg_chain(llm: ChatOpenAI) -> Runnable:
+def create_svg_chain(llm: ChatOpenAI, svg_type: str = "dynamic") -> Runnable:
     parser = PydanticOutputParser(pydantic_object=SVGGeneration)
 
+    # 根据 svg_type 选择不同的 prompt 模板
+    if svg_type == "static":
+        template = SVG_PROMPT_TEMPLATE_STATIC
+    else:
+        template = SVG_PROMPT_TEMPLATE
+
     prompt = PromptTemplate(
-        template=SVG_PROMPT_TEMPLATE,
+        template=template,
         input_variables=["question", "explanation"],
         partial_variables={"format_instructions": parser.get_format_instructions()},
     )
 
     chain = prompt | llm | parser
-
     return chain
 
 

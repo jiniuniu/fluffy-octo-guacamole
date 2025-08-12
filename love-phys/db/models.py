@@ -36,6 +36,11 @@ class GenerateContentRequest(BaseModel):
     model: ModelType = Field(ModelType.CLAUDE, description="使用的模型")
     enable_tts: bool = Field(True, description="是否启用TTS语音合成")
     voice_type: VoiceType = Field(VoiceType.CHERRY, description="TTS声音类型")
+    svg_type: str = Field(
+        "dynamic",
+        description="SVG类型：dynamic(动态) 或 static(静态)",
+        regex="^(dynamic|static)$",
+    )
 
 
 class ModifySVGRequest(BaseModel):

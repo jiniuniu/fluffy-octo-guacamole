@@ -51,15 +51,15 @@ class GenerationService:
             logger.warning(f"七牛云存储服务初始化失败: {e}")
             self.storage_service = None
 
-    def get_chain(self, model: str, chain_type: str):
+    def get_chain(self, model: str, chain_type: str, svg_type: str = "dynamic"):
         """获取或创建指定类型的chain - 每次都创建新实例"""
-        logger.info(f"创建新的chain: {model}-{chain_type}")
+        logger.info(f"创建新的chain: {model}-{chain_type}-{svg_type}")
         llm = get_llm(model=model)
 
         if chain_type == "content":
             return create_content_chain(llm)
         elif chain_type == "svg":
-            return create_svg_chain(llm)
+            return create_svg_chain(llm, svg_type=svg_type)
         elif chain_type == "svg_modify":
             return create_svg_modify_chain(llm)
         else:
@@ -69,6 +69,7 @@ class GenerationService:
         self,
         question: str,
         model: str,
+        svg_type: str = "dynamic",
         enable_tts: bool = True,
         voice_type: str = "Cherry",
         metadata: Optional[Dict[str, Any]] = None,
@@ -83,6 +84,10 @@ class GenerationService:
         try:
             # 1. 创建pending记录
             logger.info(f"创建pending记录: {question[:50]}...")
+            if metadata is None:
+                metadata = {}
+            metadata["svg_type"] = svg_type
+
             history_record = await self.history_service.create_pending_record(
                 question=question, model=model, metadata=metadata
             )
@@ -90,7 +95,7 @@ class GenerationService:
 
             # 2. 获取chains
             content_chain = self.get_chain(model, "content")
-            svg_chain = self.get_chain(model, "svg")
+            svg_chain = self.get_chain(model, "svg", svg_type=svg_type)
 
             # 3. 生成物理内容
             logger.info(f"生成物理内容: {history_id}")
