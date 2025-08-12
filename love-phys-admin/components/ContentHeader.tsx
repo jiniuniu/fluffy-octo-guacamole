@@ -23,6 +23,7 @@ import {
   Zap,
   Mic,
   Calendar,
+  Image as ImageIcon,
 } from "lucide-react";
 import { GenerationRecord } from "@/lib/types";
 
@@ -63,6 +64,18 @@ export function ContentHeader({
     );
   };
 
+  const getSvgTypeIcon = (svgType?: string) => {
+    return svgType === "static" ? (
+      <ImageIcon className="w-3.5 h-3.5 text-blue-600" />
+    ) : (
+      <Play className="w-3.5 h-3.5 text-green-600" />
+    );
+  };
+
+  const getSvgTypeName = (svgType?: string) => {
+    return svgType === "static" ? "静态" : "动态";
+  };
+
   const getModelName = (model: string) => {
     return model === "claude" ? "Claude" : "Qwen";
   };
@@ -78,11 +91,18 @@ export function ContentHeader({
                 {record.question}
               </h2>
               <div className="flex items-center gap-3 flex-wrap">
+                {/* 模型信息 */}
                 <div className="flex items-center gap-1 text-xs text-gray-600">
                   <span className="w-2 h-2 bg-green-500 rounded-full"></span>
                   {getModelIcon(record.model)}
                   <span>{getModelName(record.model)}</span>
                 </div>
+                {/* SVG 类型信息 */}
+                <div className="flex items-center gap-1 text-xs text-gray-600">
+                  {getSvgTypeIcon(record.svg_type)}
+                  <span>{getSvgTypeName(record.svg_type)}</span>
+                </div>
+                {/* 音频和时间信息 */}
                 {record.audio_url && (
                   <div className="flex items-center gap-1 text-xs text-gray-600">
                     <Mic className="w-3.5 h-3.5 text-orange-600" />

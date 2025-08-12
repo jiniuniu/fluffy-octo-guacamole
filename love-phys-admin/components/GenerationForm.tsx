@@ -21,6 +21,8 @@ import {
   Plus,
   Sparkles,
   Zap,
+  Image as ImageIcon,
+  Play,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -37,6 +39,7 @@ export function GenerationForm() {
   );
   const [enableTts, setEnableTts] = useState(true);
   const [voiceType, setVoiceType] = useState("Cherry");
+  const [svgType, setSvgType] = useState<"dynamic" | "static">("dynamic");
 
   const store = useAppStore();
   const actions = useAppActions();
@@ -53,7 +56,8 @@ export function GenerationForm() {
       question.trim(),
       selectedModel,
       enableTts,
-      voiceType
+      voiceType,
+      svgType
     );
 
     // 只有成功时才清空输入框
@@ -306,6 +310,78 @@ export function GenerationForm() {
                 )}
               </DropdownMenuContent>
             </DropdownMenu>
+            <div className="space-y-2">
+              <label className="text-xs font-medium text-gray-700">
+                动画类型
+              </label>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    disabled={isGenerating}
+                    className="w-full justify-between h-10 rounded-xl border-gray-200 text-sm hover:bg-gray-50 transition-all"
+                  >
+                    <div className="flex items-center gap-2">
+                      {svgType === "dynamic" ? (
+                        <>
+                          <Play className="w-4 h-4 text-green-600" />
+                          <span>动态动画</span>
+                          <span className="text-xs text-gray-500">• 推荐</span>
+                        </>
+                      ) : (
+                        <>
+                          <ImageIcon className="w-4 h-4 text-blue-600" />
+                          <span>静态图示</span>
+                          <span className="text-xs text-gray-500">
+                            • 加载更快
+                          </span>
+                        </>
+                      )}
+                    </div>
+                    <ChevronDown className="w-4 h-4 text-gray-400" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-80">
+                  {/* 动态选项 */}
+                  <DropdownMenuItem
+                    onClick={() => setSvgType("dynamic")}
+                    className={`flex items-center gap-3 p-3 ${
+                      svgType === "dynamic" ? "bg-green-50" : ""
+                    }`}
+                  >
+                    <Play className="w-4 h-4 text-green-600" />
+                    <div className="flex-1">
+                      <div className="font-medium text-sm">动态动画</div>
+                      <div className="text-xs text-gray-500">
+                        包含动画效果的交互式SVG，更生动直观
+                      </div>
+                    </div>
+                    {svgType === "dynamic" && (
+                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    )}
+                  </DropdownMenuItem>
+
+                  {/* 静态选项 */}
+                  <DropdownMenuItem
+                    onClick={() => setSvgType("static")}
+                    className={`flex items-center gap-3 p-3 ${
+                      svgType === "static" ? "bg-blue-50" : ""
+                    }`}
+                  >
+                    <ImageIcon className="w-4 h-4 text-blue-600" />
+                    <div className="flex-1">
+                      <div className="font-medium text-sm">静态图示</div>
+                      <div className="text-xs text-gray-500">
+                        静态图解说明，无动画效果，加载更快
+                      </div>
+                    </div>
+                    {svgType === "static" && (
+                      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                    )}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
         </div>
       </div>

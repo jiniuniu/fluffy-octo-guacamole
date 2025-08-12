@@ -47,7 +47,8 @@ interface AppStore {
     question: string,
     model: "claude" | "qwen",
     enableTts?: boolean,
-    voiceType?: string
+    voiceType?: string,
+    svgType?: "dynamic" | "static"
   ) => Promise<void>;
   modifySvg: (
     history_id: string,
@@ -103,7 +104,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
     question: string,
     model: "claude" | "qwen",
     enableTts = true,
-    voiceType = "Cherry"
+    voiceType = "Cherry",
+    svgType = "dynamic"
   ) => {
     const { setAsyncOperation, addRecord, resetAsyncOperation } = get();
 
@@ -164,6 +166,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
         model,
         enable_tts: enableTts,
         voice_type: voiceType as any,
+        svg_type: svgType,
       });
 
       clearInterval(progressInterval);
@@ -184,6 +187,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
         // 音频相关字段
         audio_url: result.audio?.url,
         audio_metadata: result.audio?.metadata,
+        svg_type: svgType,
       };
 
       // 添加记录并选中

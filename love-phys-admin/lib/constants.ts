@@ -103,3 +103,25 @@ export const TIMING = {
   },
   DEBOUNCE_DELAY: 300,
 } as const;
+
+export const SVG_TYPES = {
+  DYNAMIC: "dynamic" as const,
+  STATIC: "static" as const,
+} as const;
+
+export const SVG_TYPE_CONFIG = {
+  [SVG_TYPES.DYNAMIC]: {
+    name: "动态动画",
+    displayName: "动态SVG",
+    description: "包含动画效果的交互式SVG",
+    icon: "play",
+    color: "green",
+  },
+  [SVG_TYPES.STATIC]: {
+    name: "静态图示",
+    displayName: "静态SVG",
+    description: "静态图解，无动画效果，加载更快",
+    icon: "image",
+    color: "blue",
+  },
+} as const;

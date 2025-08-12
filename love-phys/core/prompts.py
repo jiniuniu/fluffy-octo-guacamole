@@ -47,7 +47,8 @@ SVG_MODIFY_PROMPT_TEMPLATE = """你需要根据用户反馈改进现有的SVG物
    - 文字优化: 调整文本内容、大小、位置
 
 ## 输出要求
-- 使用 viewBox='0 0 1000 600' 并且全部使用单引号
+- 使用 <?xml version='1.0' encoding='UTF-8'?> 开头
+- 使用 <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1000 600'>
 - 保持 `<title>` 和 `<desc>` 标签
 - 文本中不要使用双引号，统一使用单引号
 - 确保物理原理正确
@@ -60,7 +61,8 @@ SVG_MODIFY_PROMPT_TEMPLATE = """你需要根据用户反馈改进现有的SVG物
 SVG_PROMPT_TEMPLATE = """基于物理解释创建SVG动画图表。
 
 ## 基本要求
-- 使用 viewBox='0 0 1000 600'，全部单引号
+- 使用 <?xml version='1.0' encoding='UTF-8'?> 开头
+- 使用 <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1000 600'>
 - 包含 <title> 和 <desc> 标签
 - 所有元素同时可见，不使用opacity隐藏
 
@@ -131,7 +133,8 @@ SVG_PROMPT_TEMPLATE = """基于物理解释创建SVG动画图表。
 SVG_PROMPT_TEMPLATE_STATIC = """基于物理解释创建静态SVG图表，专为可视化编辑器设计。
 
 ## 基本要求
-- 使用 viewBox='0 0 1000 600'，全部单引号
+- 使用 <?xml version='1.0' encoding='UTF-8'?> 开头
+- 使用 <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1000 600'>
 - 包含 <title> 和 <desc> 标签
 - 纯静态元素，不使用任何动画标签
 - 所有元素可编辑（位置、大小、颜色）

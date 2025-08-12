@@ -66,6 +66,7 @@ export const generationApi = {
           mime_type: string;
           generated_at: string;
         };
+        svg_type?: string;
       };
     }>("/generate/full", {
       method: "POST",
@@ -73,6 +74,7 @@ export const generationApi = {
         ...data,
         enable_tts: data.enable_tts ?? true, // 默认启用TTS
         voice_type: data.voice_type ?? "Cherry", // 默认声音
+        svg_type: data.svg_type ?? "dynamic",
       }),
     });
   },

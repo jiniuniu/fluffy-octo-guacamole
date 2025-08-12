@@ -17,6 +17,7 @@ export interface GenerationRecord {
     mime_type: string;
     generated_at: string;
   };
+  svg_type?: string;
 }
 
 // 统一的异步操作状态
@@ -41,6 +42,7 @@ export interface GenerateRequest {
     | "Dylan"
     | "Jada"
     | "Sunny";
+  svg_type?: "dynamic" | "static";
 }
 
 export interface ModifyRequest {
