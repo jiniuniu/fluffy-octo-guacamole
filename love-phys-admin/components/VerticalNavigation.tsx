@@ -41,18 +41,20 @@ export function VerticalNavigation({
           {/* 生成按钮 */}
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => onTabChange("generate")}
-                className={`w-12 h-12 p-0 rounded-full transition-all duration-200 flex items-center justify-center ${
-                  activeTab === "generate"
-                    ? "bg-blue-600 hover:bg-blue-700 text-white shadow-lg scale-105"
-                    : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
-                }`}
-              >
-                <Plus className="w-5 h-5" />
-              </Button>
+              <div className="w-12 h-12 flex items-center justify-center">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onTabChange("generate")}
+                  className={`p-0 rounded-full transition-all duration-200 flex items-center justify-center ${
+                    activeTab === "generate"
+                      ? "w-10 h-10 bg-blue-600 hover:bg-blue-700 text-white shadow-lg"
+                      : "w-12 h-12 text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                  }`}
+                >
+                  <Plus className="w-5 h-5" />
+                </Button>
+              </div>
             </TooltipTrigger>
             <TooltipContent side="right">
               <p>生成新内容</p>
@@ -62,18 +64,20 @@ export function VerticalNavigation({
           {/* 历史记录按钮 */}
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => onTabChange("history")}
-                className={`w-12 h-12 p-0 rounded-full transition-all duration-200 flex items-center justify-center ${
-                  activeTab === "history"
-                    ? "bg-blue-600 hover:bg-blue-700 text-white shadow-lg scale-105"
-                    : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
-                }`}
-              >
-                <History className="w-5 h-5" />
-              </Button>
+              <div className="w-12 h-12 flex items-center justify-center">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onTabChange("history")}
+                  className={`p-0 rounded-full transition-all duration-200 flex items-center justify-center ${
+                    activeTab === "history"
+                      ? "w-10 h-10 bg-blue-600 hover:bg-blue-700 text-white shadow-lg"
+                      : "w-12 h-12 text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                  }`}
+                >
+                  <History className="w-5 h-5" />
+                </Button>
+              </div>
             </TooltipTrigger>
             <TooltipContent side="right">
               <p>历史记录</p>

@@ -318,6 +318,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
         // 音频相关字段
         audio_url: item.audio_url,
         audio_metadata: item.audio_metadata,
+        svg_type: item.metadata?.svg_type,
       }));
 
       set({

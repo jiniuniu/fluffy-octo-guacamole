@@ -127,6 +127,9 @@ export const historyApi = {
           mime_type: string;
           generated_at: string;
         };
+        metadata?: {
+          svg_type: string;
+        };
       }>;
       total: number;
       page: number;
