@@ -4,6 +4,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { SVGPreview } from "./SVGPreview";
+import { SVGEditor } from "./editor/SVGEditor";
 import { ContentHeader } from "./ContentHeader";
 import { StateDisplay } from "./StateDisplay";
 import { useAppStore, useAppActions } from "@/lib/store";
@@ -134,6 +135,28 @@ export function ContentViewer({ record }: ContentViewerProps) {
     }
   };
 
+  const handleEnterEditMode = () => {
+    actions.enterEditMode(currentRecord);
+  };
+
+  const handleExitEditMode = () => {
+    actions.exitEditMode();
+  };
+
+  const handleEditorSvgChange = (newSvgCode: string) => {
+    // 更新本地状态
+    setCurrentRecord((prev) => ({
+      ...prev,
+      svg_code: newSvgCode,
+    }));
+
+    // 更新全局状态
+    actions.updateEditingRecord(newSvgCode);
+
+    // 可选: 自动保存到服务器
+    // actions.updateRecordSvg(currentRecord.id, newSvgCode);
+  };
+
   // 失败状态显示
   if (currentRecord.status === "failed") {
     return (
@@ -200,37 +223,48 @@ export function ContentViewer({ record }: ContentViewerProps) {
           </div>
         )}
 
-      {/* 布局容器 */}
-      <div className="h-full flex flex-col">
-        {/* 头部区域 */}
-        <ContentHeader
+      {/* 主要内容区域 - 根据编辑状态条件渲染 */}
+      {store.isEditing && store.editingRecord?.id === currentRecord.id ? (
+        /* 编辑模式 */
+        <SVGEditor
           record={currentRecord}
-          showAudio={showAudio}
-          isPlaying={isPlaying}
-          onToggleAudio={handleToggleAudio}
-          onTogglePlayback={handleTogglePlayback}
-          onShowExplanation={() => setOverlayType("explanation")}
-          onShowTechInfo={() => setOverlayType("tech-info")}
-          onModifyAnimation={() => setShowModifyDialog(true)}
-          onFullscreen={handleFullscreen}
-          onDownload={handleDownload}
-          onDownloadAudio={handleDownloadAudio}
+          onSvgChange={handleEditorSvgChange}
+          onExit={handleExitEditMode}
         />
-
-        {/* SVG动画区域 */}
-        <div ref={svgContainerRef} className="flex-1 px-6 pb-6">
-          <SVGPreview
-            svgCode={currentRecord.svg_code}
-            className="w-full h-full"
+      ) : (
+        /* 预览模式 - 现有布局 */
+        <div className="h-full flex flex-col">
+          {/* 头部区域 - 添加编辑按钮 */}
+          <ContentHeader
             record={currentRecord}
-            onSvgModified={handleSvgModified}
-            overlayType={overlayType}
-            onOverlayTypeChange={setOverlayType}
-            showModifyDialog={showModifyDialog}
-            onShowModifyDialogChange={setShowModifyDialog}
+            showAudio={showAudio}
+            isPlaying={isPlaying}
+            onToggleAudio={handleToggleAudio}
+            onTogglePlayback={handleTogglePlayback}
+            onShowExplanation={() => setOverlayType("explanation")}
+            onShowTechInfo={() => setOverlayType("tech-info")}
+            onModifyAnimation={() => setShowModifyDialog(true)}
+            onFullscreen={handleFullscreen}
+            onDownload={handleDownload}
+            onDownloadAudio={handleDownloadAudio}
+            onEnterEditMode={handleEnterEditMode} // 新增
           />
+
+          {/* SVG动画区域 - 保持不变 */}
+          <div ref={svgContainerRef} className="flex-1 px-6 pb-6">
+            <SVGPreview
+              svgCode={currentRecord.svg_code}
+              className="w-full h-full"
+              record={currentRecord}
+              onSvgModified={handleSvgModified}
+              overlayType={overlayType}
+              onOverlayTypeChange={setOverlayType}
+              showModifyDialog={showModifyDialog}
+              onShowModifyDialogChange={setShowModifyDialog}
+            />
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

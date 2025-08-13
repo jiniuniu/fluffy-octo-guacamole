@@ -1,3 +1,5 @@
+import { EditorHistory } from "./editor/types";
+
 // lib/types.ts
 export interface GenerationRecord {
   id: string;
@@ -18,6 +20,8 @@ export interface GenerationRecord {
     generated_at: string;
   };
   svg_type?: string;
+  editHistory?: EditorHistory;
+  lastEditedAt?: string;
 }
 
 // 统一的异步操作状态

@@ -23,6 +23,7 @@ import {
   Zap,
   Mic,
   Calendar,
+  Edit3,
   Image as ImageIcon,
 } from "lucide-react";
 import { GenerationRecord } from "@/lib/types";
@@ -41,6 +42,7 @@ interface ContentHeaderProps {
   onModifyAnimation: () => void;
   onFullscreen: () => void;
   onDownload: () => void;
+  onEnterEditMode?: () => void;
 }
 
 export function ContentHeader({
@@ -55,6 +57,7 @@ export function ContentHeader({
   onModifyAnimation,
   onFullscreen,
   onDownload,
+  onEnterEditMode,
 }: ContentHeaderProps) {
   const getModelIcon = (model: string) => {
     return model === "claude" ? (
@@ -231,6 +234,24 @@ export function ContentHeader({
 
               {/* 编辑操作组 */}
               <div className="flex items-center gap-1 bg-white/40 backdrop-blur-sm rounded-full px-2 py-1">
+                {/* 新增: SVG 编辑按钮 */}
+                {onEnterEditMode && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={onEnterEditMode}
+                        className="w-8 h-8 p-0 rounded-full hover:bg-green-100 transition-colors"
+                      >
+                        <Edit3 className="w-4 h-4 text-green-600" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>编辑 SVG</p>
+                    </TooltipContent>
+                  </Tooltip>
+                )}
                 {/* 修改动画 */}
                 <Tooltip>
                   <TooltipTrigger asChild>

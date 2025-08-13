@@ -65,6 +65,15 @@ interface AppStore {
   updateRecordSvg: (id: string, newSvgCode: string) => void;
   clearError: () => void;
   resetAsyncOperation: () => void;
+
+  // 编辑器状态
+  isEditing: boolean;
+  editingRecord: GenerationRecord | null;
+
+  // 编辑器操作
+  enterEditMode: (record: GenerationRecord) => void;
+  exitEditMode: () => void;
+  updateEditingRecord: (newSvgCode: string) => void;
 }
 
 export const useAppStore = create<AppStore>((set, get) => ({
@@ -432,6 +441,40 @@ export const useAppStore = create<AppStore>((set, get) => ({
         model: undefined,
       },
     }),
+  // 编辑器相关状态
+  isEditing: false,
+  editingRecord: null,
+
+  // 进入编辑模式
+  enterEditMode: (record) =>
+    set({
+      isEditing: true,
+      editingRecord: record,
+      selectedRecord: record,
+    }),
+
+  // 退出编辑模式
+  exitEditMode: () =>
+    set({
+      isEditing: false,
+      editingRecord: null,
+    }),
+
+  // 更新编辑中的记录
+  updateEditingRecord: (newSvgCode) => {
+    const { editingRecord, recentRecords } = get();
+    if (!editingRecord) return;
+
+    const updatedRecord = { ...editingRecord, svg_code: newSvgCode };
+
+    set({
+      editingRecord: updatedRecord,
+      selectedRecord: updatedRecord,
+      recentRecords: recentRecords.map((record) =>
+        record.id === editingRecord.id ? updatedRecord : record
+      ),
+    });
+  },
 }));
 
 // 单独导出actions - 使用 useCallback 避免重新创建
@@ -453,6 +496,10 @@ export const useAppActions = () => {
       setSelectedRecord: store.setSelectedRecord,
       updateRecordSvg: store.updateRecordSvg,
       clearError: store.clearError,
+      // 编辑器方法
+      enterEditMode: store.enterEditMode,
+      exitEditMode: store.exitEditMode,
+      updateEditingRecord: store.updateEditingRecord,
     }),
     [
       store.generateFull,
@@ -467,6 +514,9 @@ export const useAppActions = () => {
       store.setSelectedRecord,
       store.updateRecordSvg,
       store.clearError,
+      store.enterEditMode,
+      store.exitEditMode,
+      store.updateEditingRecord,
     ]
   );
 };
