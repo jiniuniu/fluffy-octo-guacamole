@@ -100,6 +100,17 @@ export function useKeyboard() {
         case "B":
           setCurrentTool("draw");
           break;
+        case "l":
+        case "L":
+          setCurrentTool("line");
+          break;
+        case "s":
+        case "S":
+          if (!(e.ctrlKey || e.metaKey)) {
+            // 避免与保存快捷键冲突
+            setCurrentTool("star");
+          }
+          break;
       }
     };
 

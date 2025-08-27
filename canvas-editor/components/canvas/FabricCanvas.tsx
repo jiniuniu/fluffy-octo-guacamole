@@ -33,6 +33,10 @@ export default function FabricCanvas({
       preserveObjectStacking: true,
     });
 
+    // 将旋转控制点移动到对象下方
+    fabric.Object.prototype.controls.mtr.offsetY = 60;
+    fabric.Object.prototype.controls.mtr.y = 0.5;
+
     setCanvas(fabricCanvas);
 
     fabricCanvas.on("selection:created", (e) => {

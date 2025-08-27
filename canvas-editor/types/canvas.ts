@@ -26,11 +26,16 @@ export type ToolType =
   | "rectangle"
   | "circle"
   | "triangle"
+  | "polygon"
+  | "star"
+  | "ellipse"
+  | "diamond"
+  | "arrow"
+  | "heart"
+  | "line"
   | "text"
   | "draw"
-  | "eraser"
-  | "line"
-  | "arrow";
+  | "eraser";
 
 export interface CanvasOptions {
   width: number;
