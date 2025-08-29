@@ -32,15 +32,21 @@ export function ExcalidrawClient({
     const appState = apiRef.current.getAppState();
     const files = apiRef.current.getFiles();
     console.log("保存场景", { elements, appState, files });
-    apiRef.current.setToast({ message: "已保存到控制台", duration: 2000 }); // 小提示
+    apiRef.current.setToast({ message: "已保存到控制台", duration: 2000 });
+  };
+
+  // 确保 initialData 始终有默认值，避免 undefined
+  const safeInitialData: InitialData = initialData || {
+    elements: [],
+    appState: { viewBackgroundColor: "#ffffff" },
+    files: {},
   };
 
   return (
     <div style={{ height: "100vh" }}>
       <Excalidraw
         excalidrawAPI={setApiRef}
-        initialData={initialData}
-        // ✅ 把按钮渲染到画布右上角（桌面和移动端都可）
+        initialData={safeInitialData}
         renderTopRightUI={(isMobile) => (
           <button
             onClick={save}
@@ -55,8 +61,6 @@ export function ExcalidrawClient({
             保存到控制台
           </button>
         )}
-        // 也可以用 renderFooter 放在底部：返回一段 JSX 即可
-        // renderFooter={() => (<div>你的自定义底部内容</div>)}
       />
     </div>
   );

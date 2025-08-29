@@ -1,358 +1,331 @@
-// lib/diagram/convert.ts
-import type { PositionedGraph, ConvertOptions, GraphInput } from "./types";
-import { getNodeDisplayText } from "./theme";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// lib/diagram/convert.ts - 最终简化版
+import type { GraphInput } from "./types";
+
+// 节点图标映射
+const nodeIcons: Record<string, string> = {
+  // 核心组件
+  service: "⚙️",
+  microservice: "🔧",
+  api: "🔌",
+  gateway: "🚪",
+  proxy: "🔀",
+  balancer: "⚖️",
+  // 数据层
+  db: "🗄️",
+  cache: "⚡",
+  search: "🔍",
+  warehouse: "🏭",
+  lake: "🏞️",
+  stream: "🌊",
+  // 消息通信
+  queue: "📥",
+  broker: "📨",
+  pubsub: "📡",
+  eventbus: "🚌",
+  webhook: "🪝",
+  // 基础设施
+  container: "📦",
+  cluster: "🔗",
+  vm: "💻",
+  serverless: "⚡",
+  edge: "🌐",
+  cdn: "🚀",
+  // 安全认证
+  auth: "🔐",
+  oauth: "🎫",
+  firewall: "🛡️",
+  vault: "🔒",
+  certificate: "📜",
+  // 监控运维
+  observability: "👀",
+  logging: "📋",
+  metrics: "📊",
+  tracing: "🔍",
+  alerting: "🚨",
+  cicd: "🔄",
+  // 业务层
+  actor: "👤",
+  frontend: "🖥️",
+  mobile: "📱",
+  desktop: "🖥️",
+  bot: "🤖",
+  // 外部系统
+  external: "🌍",
+  saas: "☁️",
+  partner: "🤝",
+  payment: "💳",
+  notification: "🔔",
+  // 网络层
+  dns: "🌐",
+  vpn: "🔒",
+  tunnel: "🚇",
+  mesh: "🕸️",
+};
+
+// 节点样式映射
+const nodeStyles: Record<
+  string,
+  { backgroundColor: string; strokeColor: string }
+> = {
+  // 核心组件 - 蓝色系
+  service: { backgroundColor: "#e3f2fd", strokeColor: "#1976d2" },
+  microservice: { backgroundColor: "#e8f5e8", strokeColor: "#388e3c" },
+  api: { backgroundColor: "#fff3e0", strokeColor: "#f57c00" },
+  gateway: { backgroundColor: "#f3e5f5", strokeColor: "#7b1fa2" },
+  proxy: { backgroundColor: "#fce4ec", strokeColor: "#c2185b" },
+  balancer: { backgroundColor: "#e0f2f1", strokeColor: "#00796b" },
+
+  // 数据层 - 绿色系
+  db: { backgroundColor: "#e8f5e8", strokeColor: "#2e7d32" },
+  cache: { backgroundColor: "#fff8e1", strokeColor: "#f57f17" },
+  search: { backgroundColor: "#f1f8e9", strokeColor: "#689f38" },
+  warehouse: { backgroundColor: "#e0f7fa", strokeColor: "#0097a7" },
+  lake: { backgroundColor: "#e3f2fd", strokeColor: "#0288d1" },
+  stream: { backgroundColor: "#f9fbe7", strokeColor: "#827717" },
+
+  // 消息通信 - 橙色系
+  queue: { backgroundColor: "#fff3e0", strokeColor: "#ef6c00" },
+  broker: { backgroundColor: "#ffecb3", strokeColor: "#ff8f00" },
+  pubsub: { backgroundColor: "#ffe0b2", strokeColor: "#f57c00" },
+  eventbus: { backgroundColor: "#ffcc02", strokeColor: "#e65100" },
+  webhook: { backgroundColor: "#ffab91", strokeColor: "#d84315" },
+
+  // 基础设施 - 灰色系
+  container: { backgroundColor: "#f5f5f5", strokeColor: "#616161" },
+  cluster: { backgroundColor: "#fafafa", strokeColor: "#424242" },
+  vm: { backgroundColor: "#eeeeee", strokeColor: "#757575" },
+  serverless: { backgroundColor: "#e8eaf6", strokeColor: "#3f51b5" },
+  edge: { backgroundColor: "#f3e5f5", strokeColor: "#9c27b0" },
+  cdn: { backgroundColor: "#e1f5fe", strokeColor: "#0277bd" },
+
+  // 安全认证 - 红色系
+  auth: { backgroundColor: "#ffebee", strokeColor: "#c62828" },
+  oauth: { backgroundColor: "#fce4ec", strokeColor: "#ad1457" },
+  firewall: { backgroundColor: "#f3e5f5", strokeColor: "#6a1b9a" },
+  vault: { backgroundColor: "#e8eaf6", strokeColor: "#303f9f" },
+  certificate: { backgroundColor: "#e0f2f1", strokeColor: "#00695c" },
+
+  // 监控运维 - 紫色系
+  observability: { backgroundColor: "#f3e5f5", strokeColor: "#7b1fa2" },
+  logging: { backgroundColor: "#ede7f6", strokeColor: "#512da8" },
+  metrics: { backgroundColor: "#e8eaf6", strokeColor: "#303f9f" },
+  tracing: { backgroundColor: "#e1f5fe", strokeColor: "#0277bd" },
+  alerting: { backgroundColor: "#fff3e0", strokeColor: "#ef6c00" },
+  cicd: { backgroundColor: "#e0f7fa", strokeColor: "#00838f" },
+
+  // 业务层 - 青色系
+  actor: { backgroundColor: "#e0f7fa", strokeColor: "#00acc1" },
+  frontend: { backgroundColor: "#b2dfdb", strokeColor: "#00695c" },
+  mobile: { backgroundColor: "#a7ffeb", strokeColor: "#00bfa5" },
+  desktop: { backgroundColor: "#84ffff", strokeColor: "#0091ea" },
+  bot: { backgroundColor: "#80deea", strokeColor: "#0097a7" },
+
+  // 外部系统 - 棕色系
+  external: { backgroundColor: "#efebe9", strokeColor: "#5d4037" },
+  saas: { backgroundColor: "#d7ccc8", strokeColor: "#6d4c41" },
+  partner: { backgroundColor: "#bcaaa4", strokeColor: "#795548" },
+  payment: { backgroundColor: "#a1887f", strokeColor: "#8d6e63" },
+  notification: { backgroundColor: "#8d6e63", strokeColor: "#6d4c41" },
+
+  // 网络层 - 深蓝色系
+  dns: { backgroundColor: "#e3f2fd", strokeColor: "#1565c0" },
+  vpn: { backgroundColor: "#e8eaf6", strokeColor: "#283593" },
+  tunnel: { backgroundColor: "#f3e5f5", strokeColor: "#4527a0" },
+  mesh: { backgroundColor: "#ede7f6", strokeColor: "#6a1b9a" },
+};
 
 /**
- * 生成唯一ID（兼容Excalidraw格式）
+ * 将后端返回的 GraphInput 转换为 Excalidraw 场景
  */
-function generateId(): string {
-  const chars =
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-";
-  let result = "";
-  for (let i = 0; i < 20; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return result;
-}
+export async function convertGraphToExcalidraw(graphData: GraphInput) {
+  try {
+    console.log("🚀 开始转换图数据:", graphData);
 
-/**
- * 将布局后的图转换为 Excalidraw 元素
- */
-export function graphToExcalidraw(
-  graph: PositionedGraph,
-  options: ConvertOptions
-): { elements: any[]; appState: any } {
-  const elements: any[] = [];
-  const theme = options.theme;
+    // 动态导入 Excalidraw 相关函数
+    const { convertToExcalidrawElements } = await import(
+      "@excalidraw/excalidraw"
+    );
+    const dagre = await import("@dagrejs/dagre");
 
-  // 1. 先渲染分组（作为背景）
-  if (graph.groups) {
-    for (const group of graph.groups) {
-      const groupStyle = theme.group?.[group.kind] || theme.defaults.group;
+    // 1. 创建 dagre 图进行布局
+    const g = new dagre.graphlib.Graph();
+    g.setDefaultEdgeLabel(() => ({}));
+    g.setGraph({
+      rankdir: graphData.rankdir || "LR",
+      nodesep: 50,
+      edgesep: 20,
+      ranksep: 80,
+    });
 
-      // 分组背景矩形
-      elements.push({
+    // 2. 添加节点到 dagre 图并计算尺寸
+    for (const node of graphData.nodes) {
+      const icon = nodeIcons[node.kind] || "📄";
+      const displayText = `${icon} ${node.label}`;
+
+      // 简单的尺寸计算
+      const textWidth = displayText.length * 8;
+      const width = Math.max(Math.min(textWidth + 40, 300), 120);
+      const height = 60;
+
+      g.setNode(node.id, {
+        ...node,
+        width,
+        height,
+      });
+    }
+
+    // 3. 添加边到 dagre 图
+    for (const edge of graphData.edges) {
+      g.setEdge(edge.from, edge.to, edge);
+    }
+
+    // 4. 执行布局
+    dagre.layout(g);
+
+    // 5. 创建骨架元素数组
+    const skeletonElements: any[] = [];
+
+    // 6. 添加节点元素
+    for (const node of graphData.nodes) {
+      const dagreNode = g.node(node.id);
+      const icon = nodeIcons[node.kind] || "📄";
+      const displayText = `${icon} ${node.label}`;
+      const style = nodeStyles[node.kind] || {
+        backgroundColor: "#ffffff",
+        strokeColor: "#000000",
+      };
+
+      skeletonElements.push({
         type: "rectangle",
-        id: generateId(),
-        x: group.x,
-        y: group.y,
-        width: group.width,
-        height: group.height,
-        backgroundColor: groupStyle?.backgroundColor || "#f8f9fa",
-        strokeColor: groupStyle?.strokeColor || "#e9ecef",
-        strokeWidth: groupStyle?.strokeWidth || 2,
-        strokeStyle: groupStyle?.strokeStyle || "dashed",
-        roughness: 1,
-        opacity: groupStyle?.opacity || 50,
-        fillStyle: "solid",
-        roundness: { type: 3, value: 16 },
-        locked: false,
-        link: null,
-        customData: {
-          groupId: group.id,
-          groupLabel: group.label,
-          groupKind: group.kind,
+        x: dagreNode.x - dagreNode.width / 2,
+        y: dagreNode.y - dagreNode.height / 2,
+        width: dagreNode.width,
+        height: dagreNode.height,
+        backgroundColor: style.backgroundColor,
+        strokeColor: style.strokeColor,
+        strokeWidth: 2,
+        label: {
+          text: displayText,
+          fontSize: 14,
+          strokeColor: "#333333",
         },
       });
-
-      // 分组标签
-      const labelText = `📁 ${group.label}`;
-      elements.push({
-        type: "text",
-        id: generateId(),
-        x: group.x + 12,
-        y: group.y + 8,
-        width: labelText.length * 8,
-        height: 20,
-        text: labelText,
-        fontSize: 16,
-        fontFamily: 1,
-        textAlign: "left",
-        verticalAlign: "top",
-        strokeColor: groupStyle?.strokeColor || "#666",
-        backgroundColor: "transparent",
-        fillStyle: "solid",
-        roughness: 0,
-        opacity: 100,
-        locked: false,
-        link: null,
-      });
     }
-  }
 
-  // 2. 渲染节点
-  for (const node of graph.nodes) {
-    const nodeStyle = theme.node?.[node.kind] || theme.defaults.node;
-    const displayText = getNodeDisplayText(node);
+    // 7. 添加边元素（箭头）
+    for (const edge of graphData.edges) {
+      const fromNode = g.node(edge.from);
+      const toNode = g.node(edge.to);
 
-    // 节点矩形
-    const rectId = generateId();
-    elements.push({
-      type: "rectangle",
-      id: rectId,
-      x: node.x,
-      y: node.y,
-      width: node.width,
-      height: node.height,
-      backgroundColor: nodeStyle?.backgroundColor || "#ffffff",
-      strokeColor: nodeStyle?.strokeColor || "#000000",
-      strokeWidth: nodeStyle?.strokeWidth || 2,
-      fillStyle: "solid",
-      roughness: 1,
-      opacity: 100,
-      roundness: { type: 3, value: 8 },
-      locked: false,
-      link: null,
-      customData: {
-        nodeId: node.id,
-        nodeKind: node.kind,
-        isArchNode: true,
-      },
-    });
+      if (fromNode && toNode) {
+        // 计算箭头位置
+        const startX = fromNode.x + fromNode.width / 2;
+        const startY = fromNode.y;
+        const endX = toNode.x - toNode.width / 2;
+        const endY = toNode.y;
 
-    // 节点标签文本
-    const textWidth = displayText.length * ((nodeStyle?.fontSize || 14) * 0.6);
-    const textHeight = nodeStyle?.fontSize || 14;
+        const arrowElement: any = {
+          type: "arrow",
+          x: startX,
+          y: startY,
+          width: endX - startX,
+          height: endY - startY,
+          strokeColor: "#666666",
+          strokeWidth: 2,
+        };
 
-    elements.push({
-      type: "text",
-      id: generateId(),
-      x: node.x + (node.width - textWidth) / 2,
-      y: node.y + (node.height - textHeight) / 2,
-      width: textWidth,
-      height: textHeight,
-      text: displayText,
-      fontSize: nodeStyle?.fontSize || 14,
-      fontFamily: 1, // Virgil
-      textAlign: "center",
-      verticalAlign: "middle",
-      strokeColor: nodeStyle?.textColor || "#333333",
-      backgroundColor: "transparent",
-      fillStyle: "solid",
-      roughness: 0,
-      opacity: 100,
-      locked: false,
-      link: null,
-      containerId: rectId, // 绑定到节点矩形
-      originalText: displayText,
-    });
-  }
+        // 添加标签（如果有）
+        if (edge.label && edge.label.trim()) {
+          arrowElement.label = {
+            text: edge.label,
+            fontSize: 12,
+            strokeColor: "#555555",
+          };
+        }
 
-  // 3. 渲染边
-  for (const edge of graph.edges) {
-    const fromNode = graph.nodes.find((n) => n.id === edge.from);
-    const toNode = graph.nodes.find((n) => n.id === edge.to);
-
-    if (!fromNode || !toNode) continue;
-
-    // 计算连接点
-    const startPoint = getConnectionPoint(fromNode, toNode, "start");
-    const endPoint = getConnectionPoint(toNode, fromNode, "end");
-
-    const edgeStyle = theme.defaults.edge;
-
-    // 创建箭头
-    const arrowId = generateId();
-    elements.push({
-      type: "arrow",
-      id: arrowId,
-      x: startPoint.x,
-      y: startPoint.y,
-      width: endPoint.x - startPoint.x,
-      height: endPoint.y - startPoint.y,
-      strokeColor: edgeStyle?.strokeColor || "#666666",
-      strokeWidth: edgeStyle?.strokeWidth || 2,
-      fillStyle: "solid",
-      roughness: 1,
-      opacity: 100,
-      points: [
-        [0, 0],
-        [endPoint.x - startPoint.x, endPoint.y - startPoint.y],
-      ],
-      lastCommittedPoint: [
-        endPoint.x - startPoint.x,
-        endPoint.y - startPoint.y,
-      ],
-      startBinding: null,
-      endBinding: null,
-      startArrowhead: null,
-      endArrowhead: edgeStyle?.arrowhead || "triangle",
-      locked: false,
-      link: null,
-      customData: {
-        edgeFrom: edge.from,
-        edgeTo: edge.to,
-        isArchEdge: true,
-      },
-    });
-
-    // 边标签（如果有）
-    if (edge.label) {
-      const midX = (startPoint.x + endPoint.x) / 2;
-      const midY = (startPoint.y + endPoint.y) / 2;
-      const labelWidth = edge.label.length * 7;
-
-      // 标签背景
-      elements.push({
-        type: "rectangle",
-        id: generateId(),
-        x: midX - labelWidth / 2 - 4,
-        y: midY - 10,
-        width: labelWidth + 8,
-        height: 20,
-        backgroundColor: "#ffffff",
-        strokeColor: "transparent",
-        fillStyle: "solid",
-        roughness: 0,
-        opacity: 90,
-        locked: false,
-        link: null,
-      });
-
-      // 标签文本
-      elements.push({
-        type: "text",
-        id: generateId(),
-        x: midX - labelWidth / 2,
-        y: midY - 8,
-        width: labelWidth,
-        height: 16,
-        text: edge.label,
-        fontSize: 12,
-        fontFamily: 1,
-        textAlign: "center",
-        verticalAlign: "middle",
-        strokeColor: "#555555",
-        backgroundColor: "transparent",
-        fillStyle: "solid",
-        roughness: 0,
-        opacity: 100,
-        locked: false,
-        link: null,
-      });
+        skeletonElements.push(arrowElement);
+      }
     }
-  }
 
-  return {
-    elements,
-    appState: {
-      viewBackgroundColor: "#ffffff",
-      currentItemStrokeColor: "#000000",
-      currentItemBackgroundColor: "transparent",
-      currentItemFillStyle: "solid",
-      currentItemStrokeWidth: 2,
-      currentItemRoughness: 1,
-      currentItemOpacity: 100,
-      gridSize: null,
-      theme: "light",
-      activeTool: { type: "selection" },
-      penMode: false,
-      penDetected: false,
-    },
-  };
-}
+    // 8. 处理分组（如果有）
+    if (graphData.groups && graphData.groups.length > 0) {
+      for (const group of graphData.groups) {
+        // 计算分组边界
+        const members = group.members.map((id) => g.node(id)).filter(Boolean);
 
-/**
- * 计算节点间的连接点
- */
-function getConnectionPoint(
-  fromNode: any,
-  toNode: any,
-  type: "start" | "end"
-): { x: number; y: number } {
-  const fromCenter = {
-    x: fromNode.x + fromNode.width / 2,
-    y: fromNode.y + fromNode.height / 2,
-  };
+        if (members.length > 0) {
+          const padding = 30;
+          const minX =
+            Math.min(...members.map((n) => n.x - n.width / 2)) - padding;
+          const minY =
+            Math.min(...members.map((n) => n.y - n.height / 2)) - padding;
+          const maxX =
+            Math.max(...members.map((n) => n.x + n.width / 2)) + padding;
+          const maxY =
+            Math.max(...members.map((n) => n.y + n.height / 2)) + padding;
 
-  const toCenter = {
-    x: toNode.x + toNode.width / 2,
-    y: toNode.y + toNode.height / 2,
-  };
-
-  // 简单版本：返回节点边缘的连接点
-  if (type === "start") {
-    // 从起始节点的右侧或下侧连接
-    if (
-      Math.abs(toCenter.x - fromCenter.x) > Math.abs(toCenter.y - fromCenter.y)
-    ) {
-      // 水平方向距离更大，使用左右连接
-      return {
-        x: toCenter.x > fromCenter.x ? fromNode.x + fromNode.width : fromNode.x,
-        y: fromCenter.y,
-      };
-    } else {
-      // 垂直方向距离更大，使用上下连接
-      return {
-        x: fromCenter.x,
-        y:
-          toCenter.y > fromCenter.y ? fromNode.y + fromNode.height : fromNode.y,
-      };
+          skeletonElements.unshift({
+            type: "rectangle",
+            x: minX,
+            y: minY,
+            width: maxX - minX,
+            height: maxY - minY,
+            backgroundColor: group.kind === "cluster" ? "#f8f9fa" : "#fff3cd",
+            strokeColor: group.kind === "cluster" ? "#e9ecef" : "#ffc107",
+            strokeWidth: 2,
+            strokeStyle: group.kind === "cluster" ? "dashed" : "solid",
+            opacity: 30,
+            label: {
+              text: `📁 ${group.label}`,
+              fontSize: 12,
+              textAlign: "left",
+            },
+          });
+        }
+      }
     }
-  } else {
-    // 到目标节点的左侧或上侧连接
-    if (
-      Math.abs(toCenter.x - fromCenter.x) > Math.abs(toCenter.y - fromCenter.y)
-    ) {
-      return {
-        x: fromCenter.x > toCenter.x ? toNode.x + toNode.width : toNode.x,
-        y: toCenter.y,
-      };
-    } else {
-      return {
-        x: toCenter.x,
-        y: fromCenter.y > toCenter.y ? toNode.y + toNode.height : toNode.y,
-      };
-    }
-  }
-}
 
-/**
- * 优化节点尺寸测量
- */
-export function createMeasureFunction(defaultFontSize: number = 14) {
-  return (node: any, style: any = {}) => {
-    const fontSize = style.fontSize || defaultFontSize;
-    const paddingX = style.paddingX || 12;
-    const paddingY = style.paddingY || 8;
+    console.log("🦴 创建的骨架元素:", skeletonElements);
 
-    // 根据标签长度和字体大小计算宽度
-    const textWidth = node.label ? node.label.length * fontSize * 0.6 : 60;
-    const minWidth = 80;
-    const maxWidth = 300;
+    // 9. 使用 convertToExcalidrawElements 转换为完整元素
+    const elements = convertToExcalidrawElements(skeletonElements);
 
-    const width = Math.min(
-      Math.max(textWidth + paddingX * 2, minWidth),
-      maxWidth
-    );
-    const height = fontSize + paddingY * 2;
+    console.log("✨ 转换后的完整元素:", elements);
+    console.log("📊 元素总数:", elements.length);
 
     return {
-      width: Math.round(width),
-      height: Math.round(height),
+      elements,
+      appState: {
+        viewBackgroundColor: "#ffffff",
+        theme: "light" as const,
+      },
     };
-  };
+  } catch (error) {
+    console.error("❌ 转换失败:", error);
+
+    // 提供更详细的错误信息
+    if (error instanceof Error) {
+      if (error.message.includes("convertToExcalidrawElements")) {
+        throw new Error(
+          "Excalidraw 转换函数不可用，请检查 @excalidraw/excalidraw 包是否正确安装"
+        );
+      }
+      if (
+        error.message.includes("dagre") ||
+        error.message.includes("graphlib")
+      ) {
+        throw new Error(
+          "Dagre 布局引擎不可用，请检查 @dagrejs/dagre 包是否正确安装"
+        );
+      }
+    }
+
+    throw new Error(
+      `图表转换失败: ${error instanceof Error ? error.message : "未知错误"}`
+    );
+  }
 }
 
-/**
- * 自动检测最佳布局方向
- */
-export function detectOptimalRankdir(graph: GraphInput): string {
-  const nodeCount = graph.nodes.length;
-  const edgeCount = graph.edges.length;
-
-  // 分析图的特征
-  const avgConnections = nodeCount > 0 ? edgeCount / nodeCount : 0;
-
-  // 如果已经指定了方向，保持不变
-  if (graph.rankdir && graph.rankdir !== "LR") {
-    return graph.rankdir;
-  }
-
-  // 根据图的特征推荐布局
-  if (avgConnections > 2 && nodeCount > 10) {
-    return "TB"; // 复杂图使用垂直布局
-  }
-
-  return "LR"; // 默认左到右
-}
+// 为了保持向后兼容，导出一个别名
+export { convertGraphToExcalidraw as graphToExcalidraw };

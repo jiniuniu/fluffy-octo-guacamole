@@ -1,59 +1,18 @@
-// lib/diagram/utils.ts
-// 集成你现有的布局算法的工具函数
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// lib/diagram/utils.ts - 修复版本，移除对 convert.ts 的依赖
 
 import type { GraphInput } from "./types";
-import { defaultTheme } from "./theme";
-import { layoutWithDagre } from "./layout";
-import { graphToExcalidraw } from "./convert";
 import { ExcalidrawImperativeAPI } from "@excalidraw/excalidraw/types";
 
 /**
  * 将后端返回的 GraphInput 转换为 Excalidraw 场景
+ * 直接从 convert.ts 导入转换函数
  */
 export async function convertGraphToExcalidraw(graphData: GraphInput) {
   try {
-    console.log("开始转换图数据:", graphData);
-
-    // 1. 测量函数 - 根据节点内容计算尺寸
-    const measure = (node: any, style: any) => {
-      const len = Math.max(2, node.label?.length ?? 0);
-      const w =
-        style.paddingX * 2 + Math.max(7, style.fontSize * 0.6) * len + 12;
-      const h = style.paddingY * 2 + style.fontSize + 6;
-      return {
-        width: Math.min(Math.max(w, 120), 420),
-        height: Math.max(h, 40),
-      };
-    };
-
-    // 2. 样式解析器 - 根据节点类型返回样式
-    const styleResolver = (id: string) => {
-      const node = graphData.nodes.find((x) => x.id === id);
-      if (!node) return defaultTheme.defaults.node;
-
-      const base = defaultTheme.defaults.node;
-      const patch = (node.kind ? defaultTheme.node[node.kind] : {}) || {};
-      return { ...base, ...patch } as any;
-    };
-
-    // 3. 使用 dagre 算法进行布局
-    const positioned = layoutWithDagre(
-      graphData,
-      {
-        measure,
-        fallbackMeasure: (label) => ({ width: 160, height: 64 }),
-      },
-      styleResolver
-    );
-
-    console.log("布局完成:", positioned);
-
-    // 4. 转换为 Excalidraw 格式
-    const scene = graphToExcalidraw(positioned, { theme: defaultTheme });
-
-    console.log("转换为Excalidraw格式完成:", scene);
-
-    return scene;
+    // 直接从 convert 模块导入转换函数
+    const { convertGraphToExcalidraw: convertFn } = await import("./convert");
+    return await convertFn(graphData);
   } catch (error) {
     console.error("转换失败:", error);
     throw new Error(
@@ -61,88 +20,6 @@ export async function convertGraphToExcalidraw(graphData: GraphInput) {
     );
   }
 }
-
-/**
- * 扩展的默认主题 - 支持所有新的节点类型
- */
-export const extendedTheme = {
-  defaults: {
-    node: {
-      backgroundColor: "#ffffff",
-      strokeColor: "#000000",
-      fontSize: 14,
-      paddingX: 12,
-      paddingY: 8,
-    },
-  },
-  node: {
-    // 核心组件 - 蓝色系
-    service: { backgroundColor: "#e3f2fd", strokeColor: "#1976d2" },
-    microservice: { backgroundColor: "#e8f5e8", strokeColor: "#388e3c" },
-    api: { backgroundColor: "#fff3e0", strokeColor: "#f57c00" },
-    gateway: { backgroundColor: "#f3e5f5", strokeColor: "#7b1fa2" },
-    proxy: { backgroundColor: "#fce4ec", strokeColor: "#c2185b" },
-    balancer: { backgroundColor: "#e0f2f1", strokeColor: "#00796b" },
-
-    // 数据层 - 绿色系
-    db: { backgroundColor: "#e8f5e8", strokeColor: "#2e7d32" },
-    cache: { backgroundColor: "#fff8e1", strokeColor: "#f57f17" },
-    search: { backgroundColor: "#f1f8e9", strokeColor: "#689f38" },
-    warehouse: { backgroundColor: "#e0f7fa", strokeColor: "#0097a7" },
-    lake: { backgroundColor: "#e3f2fd", strokeColor: "#0288d1" },
-    stream: { backgroundColor: "#f9fbe7", strokeColor: "#827717" },
-
-    // 消息通信 - 橙色系
-    queue: { backgroundColor: "#fff3e0", strokeColor: "#ef6c00" },
-    broker: { backgroundColor: "#ffecb3", strokeColor: "#ff8f00" },
-    pubsub: { backgroundColor: "#ffe0b2", strokeColor: "#f57c00" },
-    eventbus: { backgroundColor: "#ffcc02", strokeColor: "#e65100" },
-    webhook: { backgroundColor: "#ffab91", strokeColor: "#d84315" },
-
-    // 基础设施 - 灰色系
-    container: { backgroundColor: "#f5f5f5", strokeColor: "#616161" },
-    cluster: { backgroundColor: "#fafafa", strokeColor: "#424242" },
-    vm: { backgroundColor: "#eeeeee", strokeColor: "#757575" },
-    serverless: { backgroundColor: "#e8eaf6", strokeColor: "#3f51b5" },
-    edge: { backgroundColor: "#f3e5f5", strokeColor: "#9c27b0" },
-    cdn: { backgroundColor: "#e1f5fe", strokeColor: "#0277bd" },
-
-    // 安全认证 - 红色系
-    auth: { backgroundColor: "#ffebee", strokeColor: "#c62828" },
-    oauth: { backgroundColor: "#fce4ec", strokeColor: "#ad1457" },
-    firewall: { backgroundColor: "#f3e5f5", strokeColor: "#6a1b9a" },
-    vault: { backgroundColor: "#e8eaf6", strokeColor: "#303f9f" },
-    certificate: { backgroundColor: "#e0f2f1", strokeColor: "#00695c" },
-
-    // 监控运维 - 紫色系
-    observability: { backgroundColor: "#f3e5f5", strokeColor: "#7b1fa2" },
-    logging: { backgroundColor: "#ede7f6", strokeColor: "#512da8" },
-    metrics: { backgroundColor: "#e8eaf6", strokeColor: "#303f9f" },
-    tracing: { backgroundColor: "#e1f5fe", strokeColor: "#0277bd" },
-    alerting: { backgroundColor: "#fff3e0", strokeColor: "#ef6c00" },
-    cicd: { backgroundColor: "#e0f7fa", strokeColor: "#00838f" },
-
-    // 业务层 - 青色系
-    actor: { backgroundColor: "#e0f7fa", strokeColor: "#00acc1" },
-    frontend: { backgroundColor: "#b2dfdb", strokeColor: "#00695c" },
-    mobile: { backgroundColor: "#a7ffeb", strokeColor: "#00bfa5" },
-    desktop: { backgroundColor: "#84ffff", strokeColor: "#0091ea" },
-    bot: { backgroundColor: "#80deea", strokeColor: "#0097a7" },
-
-    // 外部系统 - 棕色系
-    external: { backgroundColor: "#efebe9", strokeColor: "#5d4037" },
-    saas: { backgroundColor: "#d7ccc8", strokeColor: "#6d4c41" },
-    partner: { backgroundColor: "#bcaaa4", strokeColor: "#795548" },
-    payment: { backgroundColor: "#a1887f", strokeColor: "#8d6e63" },
-    notification: { backgroundColor: "#8d6e63", strokeColor: "#6d4c41" },
-
-    // 网络层 - 深蓝色系
-    dns: { backgroundColor: "#e3f2fd", strokeColor: "#1565c0" },
-    vpn: { backgroundColor: "#e8eaf6", strokeColor: "#283593" },
-    tunnel: { backgroundColor: "#f3e5f5", strokeColor: "#4527a0" },
-    mesh: { backgroundColor: "#ede7f6", strokeColor: "#6a1b9a" },
-  },
-};
 
 /**
  * 验证后端返回的图数据
