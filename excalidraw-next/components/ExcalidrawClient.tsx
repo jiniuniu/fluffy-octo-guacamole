@@ -10,12 +10,21 @@ const Excalidraw = dynamic(
   { ssr: false }
 );
 
-export default function ExcalidrawClient({
+export function ExcalidrawClient({
   initialData,
+  excalidrawAPI,
 }: {
   initialData?: InitialData;
+  excalidrawAPI?: (api: ExcalidrawImperativeAPI | null) => void;
 }) {
   const apiRef = useRef<ExcalidrawImperativeAPI | null>(null);
+
+  const setApiRef = (api: ExcalidrawImperativeAPI | null) => {
+    apiRef.current = api;
+    if (excalidrawAPI) {
+      excalidrawAPI(api);
+    }
+  };
 
   const save = () => {
     if (!apiRef.current) return;
@@ -29,7 +38,7 @@ export default function ExcalidrawClient({
   return (
     <div style={{ height: "100vh" }}>
       <Excalidraw
-        excalidrawAPI={(api) => (apiRef.current = api)}
+        excalidrawAPI={setApiRef}
         initialData={initialData}
         // ✅ 把按钮渲染到画布右上角（桌面和移动端都可）
         renderTopRightUI={(isMobile) => (

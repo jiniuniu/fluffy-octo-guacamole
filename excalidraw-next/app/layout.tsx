@@ -1,5 +1,5 @@
-import "@excalidraw/excalidraw/index.css"; // ← 必须！
-
+import "@excalidraw/excalidraw/index.css";
+import "./globals.css";
 export default function RootLayout({
   children,
 }: {
