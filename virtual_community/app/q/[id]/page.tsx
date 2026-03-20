@@ -38,20 +38,22 @@ export default function QuestionPage({
       <div className="flex flex-1 flex-col overflow-hidden border-r border-border">
         {/* question header */}
         <div className="shrink-0 border-b border-border px-4 py-3">
-          {question ? (
-            <div className="flex items-start gap-2">
-              <p className="flex-1 text-sm font-medium leading-relaxed">
-                {question.text}
-              </p>
-              <span
-                className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_BADGE[question.status]}`}
-              >
-                {STATUS_TEXT[question.status]}
-              </span>
-            </div>
-          ) : (
-            <div className="h-5 w-48 animate-pulse rounded bg-muted" />
-          )}
+          <div className="mx-auto max-w-3xl">
+            {question ? (
+              <div className="flex items-start gap-2">
+                <p className="flex-1 text-sm font-medium leading-relaxed">
+                  {question.text}
+                </p>
+                <span
+                  className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_BADGE[question.status]}`}
+                >
+                  {STATUS_TEXT[question.status]}
+                </span>
+              </div>
+            ) : (
+              <div className="h-5 w-48 animate-pulse rounded bg-muted" />
+            )}
+          </div>
         </div>
 
         {/* answers */}

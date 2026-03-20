@@ -52,7 +52,9 @@ const TopicVectorSchema = z.object({
 const SYSTEM_PROMPT = `你是一个社会学分析助手。给定一个用户问题，分析它涉及哪些价值观维度，并给出每个维度的相关度分数（0=完全无关，1=高度相关）。
 
 可用维度：
-${Object.entries(DIMENSIONS).map(([k, v]) => `- ${k}: ${v}`).join("\n")}
+${Object.entries(DIMENSIONS)
+  .map(([k, v]) => `- ${k}: ${v}`)
+  .join("\n")}
 
 只输出相关度大于0.1的维度，不相关的维度可以省略。`;
 

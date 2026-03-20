@@ -28,7 +28,7 @@ if (!url) {
 const client = new ConvexHttpClient(url);
 
 const personas = JSON.parse(
-  readFileSync(resolve(__dirname, "../data/personas.json"), "utf-8")
+  readFileSync(resolve(__dirname, "../data/personas.json"), "utf-8"),
 );
 
 // dynamic import of generated api

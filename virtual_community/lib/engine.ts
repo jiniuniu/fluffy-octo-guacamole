@@ -1,7 +1,15 @@
 type Vector = Record<string, number>;
-type Action = "ignore" | "like_question" | "answer" | "like_answer" | "reply_answer";
+type Action =
+  | "ignore"
+  | "like_question"
+  | "answer"
+  | "like_answer"
+  | "reply_answer";
 
-export function computeScore(personaVector: Vector, topicVector: Vector): number {
+export function computeScore(
+  personaVector: Vector,
+  topicVector: Vector,
+): number {
   let dot = 0;
   for (const dim of Object.keys(topicVector)) {
     dot += (personaVector[dim] ?? 0) * (topicVector[dim] ?? 0);
@@ -9,29 +17,32 @@ export function computeScore(personaVector: Vector, topicVector: Vector): number
   return dot;
 }
 
-export function sampleAction(score: number, hasExistingAnswers: boolean): Action {
+export function sampleAction(
+  score: number,
+  hasExistingAnswers: boolean,
+): Action {
   const p: Record<Action, number> = {
     ignore: 0.55,
-    like_question: 0.20,
+    like_question: 0.2,
     answer: 0.15,
-    like_answer: 0.00,
-    reply_answer: 0.00,
+    like_answer: 0.0,
+    reply_answer: 0.0,
   };
 
   if (hasExistingAnswers) {
     p.like_answer = 0.07;
     p.reply_answer = 0.03;
-    p.ignore -= 0.10;
+    p.ignore -= 0.1;
   }
 
   const absScore = Math.abs(score);
   if (absScore > 1.5) {
-    p.answer += 0.20;
+    p.answer += 0.2;
     p.reply_answer += 0.05;
     p.ignore -= 0.25;
   } else if (absScore > 0.8) {
-    p.answer += 0.10;
-    p.ignore -= 0.10;
+    p.answer += 0.1;
+    p.ignore -= 0.1;
   }
 
   return weightedSample(p);
@@ -51,7 +62,7 @@ function weightedSample(weights: Record<Action, number>): Action {
 
 // pick a target answer to like/reply, weighted by like_count (higher likes = more likely)
 export function pickTargetAnswer<T extends { _id: string; like_count: number }>(
-  answers: T[]
+  answers: T[],
 ): T {
   const weights = answers.map((a) => Math.max(a.like_count + 1, 1)); // +1 so 0-like answers still eligible
   const total = weights.reduce((s, w) => s + w, 0);

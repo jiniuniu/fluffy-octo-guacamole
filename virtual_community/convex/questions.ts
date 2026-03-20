@@ -22,27 +22,75 @@ export const getById = query({
   },
 });
 
+const DAILY_LIMIT = 3;
 
 export const create = mutation({
   args: { text: v.string() },
   handler: async (ctx, { text }) => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) throw new Error("Not authenticated");
+
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+
+    const todayCount = await ctx.db
+      .query("questions")
+      .withIndex("by_author_time", (q) =>
+        q
+          .eq("author", identity.subject)
+          .gte("created_at", startOfDay.getTime()),
+      )
+      .collect()
+      .then((r) => r.length);
+
+    if (todayCount >= DAILY_LIMIT) {
+      throw new Error("DAILY_LIMIT_EXCEEDED");
+    }
+
     const id = await ctx.db.insert("questions", {
       text,
       author: identity.subject,
       status: "pending",
       created_at: Date.now(),
     });
-    await ctx.scheduler.runAfter(0, internal.simulation.run, { question_id: id });
+    await ctx.scheduler.runAfter(0, internal.simulation.run, {
+      question_id: id,
+    });
     return id;
+  },
+});
+
+export const dailyUsage = query({
+  args: {},
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) return { used: 0, limit: DAILY_LIMIT };
+
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+
+    const used = await ctx.db
+      .query("questions")
+      .withIndex("by_author_time", (q) =>
+        q
+          .eq("author", identity.subject)
+          .gte("created_at", startOfDay.getTime()),
+      )
+      .collect()
+      .then((r) => r.length);
+
+    return { used, limit: DAILY_LIMIT };
   },
 });
 
 export const updateStatus = mutation({
   args: {
     id: v.id("questions"),
-    status: v.union(v.literal("pending"), v.literal("processing"), v.literal("done")),
+    status: v.union(
+      v.literal("pending"),
+      v.literal("processing"),
+      v.literal("done"),
+    ),
   },
   handler: async (ctx, { id, status }) => {
     await ctx.db.patch(id, { status });
@@ -53,16 +101,26 @@ export const updateTopicVector = mutation({
   args: {
     id: v.id("questions"),
     topic_vector: v.object({
-      SEQ01: v.optional(v.number()), SEQ02: v.optional(v.number()),
-      SEQ03: v.optional(v.number()), SEQ05: v.optional(v.number()),
-      OTQ01: v.optional(v.number()), OTQ02: v.optional(v.number()),
-      OTQ03: v.optional(v.number()), OTQ04: v.optional(v.number()),
-      OTQ05: v.optional(v.number()), OTQ06: v.optional(v.number()),
-      OTQ07: v.optional(v.number()), OTQ08: v.optional(v.number()),
-      OTQ10: v.optional(v.number()), GRQ01: v.optional(v.number()),
-      GRQ02: v.optional(v.number()), GRQ07: v.optional(v.number()),
-      GRQ08: v.optional(v.number()), GRQ09: v.optional(v.number()),
-      MAQ01: v.optional(v.number()), MAQ02: v.optional(v.number()),
+      SEQ01: v.optional(v.number()),
+      SEQ02: v.optional(v.number()),
+      SEQ03: v.optional(v.number()),
+      SEQ05: v.optional(v.number()),
+      OTQ01: v.optional(v.number()),
+      OTQ02: v.optional(v.number()),
+      OTQ03: v.optional(v.number()),
+      OTQ04: v.optional(v.number()),
+      OTQ05: v.optional(v.number()),
+      OTQ06: v.optional(v.number()),
+      OTQ07: v.optional(v.number()),
+      OTQ08: v.optional(v.number()),
+      OTQ10: v.optional(v.number()),
+      GRQ01: v.optional(v.number()),
+      GRQ02: v.optional(v.number()),
+      GRQ07: v.optional(v.number()),
+      GRQ08: v.optional(v.number()),
+      GRQ09: v.optional(v.number()),
+      MAQ01: v.optional(v.number()),
+      MAQ02: v.optional(v.number()),
     }),
   },
   handler: async (ctx, { id, topic_vector }) => {
@@ -121,21 +179,29 @@ export const stats = query({
     // count unique personas that appeared in logs = "saw" the question
     const saw = new Set(logs.map((l) => l.persona_id)).size;
 
-    const ignored      = logs.filter((l) => l.action === "ignore").length;
-    const likedQ       = logs.filter((l) => l.action === "like_question").length;
-    const answered     = logs.filter((l) => l.action === "answer").length;
-    const likedAnswer  = logs.filter((l) => l.action === "like_answer").length;
-    const replied      = logs.filter((l) => l.action === "reply_answer").length;
+    const ignored = logs.filter((l) => l.action === "ignore").length;
+    const likedQ = logs.filter((l) => l.action === "like_question").length;
+    const answered = logs.filter((l) => l.action === "answer").length;
+    const likedAnswer = logs.filter((l) => l.action === "like_answer").length;
+    const replied = logs.filter((l) => l.action === "reply_answer").length;
 
     const support = answers.filter((a) => a.stance === "support").length;
-    const oppose  = answers.filter((a) => a.stance === "oppose").length;
+    const oppose = answers.filter((a) => a.stance === "oppose").length;
     const neutral = answers.filter((a) => a.stance === "neutral").length;
     const totalLikes = answers.reduce((sum, a) => sum + a.like_count, 0);
 
     return {
-      saw, ignored, likedQ, answered, likedAnswer, replied,
-      support, oppose, neutral,
-      totalAnswers: answers.length, totalLikes,
+      saw,
+      ignored,
+      likedQ,
+      answered,
+      likedAnswer,
+      replied,
+      support,
+      oppose,
+      neutral,
+      totalAnswers: answers.length,
+      totalLikes,
     };
   },
 });

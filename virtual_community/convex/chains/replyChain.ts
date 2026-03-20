@@ -9,14 +9,20 @@ const ReplySchema = z.object({
 
 type Persona = {
   cluster_label: string;
-  demo: { age: number; gender: string; city: string; education: string; occupation: string };
+  demo: {
+    age: number;
+    gender: string;
+    city: string;
+    education: string;
+    occupation: string;
+  };
   bio: string;
 };
 
 export async function generateReply(
   persona: Persona,
   questionText: string,
-  targetAnswerText: string
+  targetAnswerText: string,
 ) {
   const llm = getLLM(0.9);
   const structured = llm.withStructuredOutput(ReplySchema);
@@ -36,7 +42,7 @@ export async function generateReplyToUser(
   persona: Persona,
   questionText: string,
   myAnswerText: string,
-  userReplyText: string
+  userReplyText: string,
 ) {
   const llm = getLLM(0.9);
   const structured = llm.withStructuredOutput(ReplySchema);

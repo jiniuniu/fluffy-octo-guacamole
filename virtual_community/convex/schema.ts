@@ -2,24 +2,49 @@ import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
 const personaVector = v.object({
-  SEQ01: v.number(), SEQ02: v.number(), SEQ03: v.number(), SEQ05: v.number(),
-  OTQ01: v.number(), OTQ02: v.number(), OTQ03: v.number(), OTQ04: v.number(),
-  OTQ05: v.number(), OTQ06: v.number(), OTQ07: v.number(), OTQ08: v.number(),
-  OTQ10: v.number(), GRQ01: v.number(), GRQ02: v.number(), GRQ07: v.number(),
-  GRQ08: v.number(), GRQ09: v.number(), MAQ01: v.number(), MAQ02: v.number(),
+  SEQ01: v.number(),
+  SEQ02: v.number(),
+  SEQ03: v.number(),
+  SEQ05: v.number(),
+  OTQ01: v.number(),
+  OTQ02: v.number(),
+  OTQ03: v.number(),
+  OTQ04: v.number(),
+  OTQ05: v.number(),
+  OTQ06: v.number(),
+  OTQ07: v.number(),
+  OTQ08: v.number(),
+  OTQ10: v.number(),
+  GRQ01: v.number(),
+  GRQ02: v.number(),
+  GRQ07: v.number(),
+  GRQ08: v.number(),
+  GRQ09: v.number(),
+  MAQ01: v.number(),
+  MAQ02: v.number(),
 });
 
 const topicVector = v.object({
-  SEQ01: v.optional(v.number()), SEQ02: v.optional(v.number()),
-  SEQ03: v.optional(v.number()), SEQ05: v.optional(v.number()),
-  OTQ01: v.optional(v.number()), OTQ02: v.optional(v.number()),
-  OTQ03: v.optional(v.number()), OTQ04: v.optional(v.number()),
-  OTQ05: v.optional(v.number()), OTQ06: v.optional(v.number()),
-  OTQ07: v.optional(v.number()), OTQ08: v.optional(v.number()),
-  OTQ10: v.optional(v.number()), GRQ01: v.optional(v.number()),
-  GRQ02: v.optional(v.number()), GRQ07: v.optional(v.number()),
-  GRQ08: v.optional(v.number()), GRQ09: v.optional(v.number()),
-  MAQ01: v.optional(v.number()), MAQ02: v.optional(v.number()),
+  SEQ01: v.optional(v.number()),
+  SEQ02: v.optional(v.number()),
+  SEQ03: v.optional(v.number()),
+  SEQ05: v.optional(v.number()),
+  OTQ01: v.optional(v.number()),
+  OTQ02: v.optional(v.number()),
+  OTQ03: v.optional(v.number()),
+  OTQ04: v.optional(v.number()),
+  OTQ05: v.optional(v.number()),
+  OTQ06: v.optional(v.number()),
+  OTQ07: v.optional(v.number()),
+  OTQ08: v.optional(v.number()),
+  OTQ10: v.optional(v.number()),
+  GRQ01: v.optional(v.number()),
+  GRQ02: v.optional(v.number()),
+  GRQ07: v.optional(v.number()),
+  GRQ08: v.optional(v.number()),
+  GRQ09: v.optional(v.number()),
+  MAQ01: v.optional(v.number()),
+  MAQ02: v.optional(v.number()),
 });
 
 export default defineSchema({
@@ -51,13 +76,18 @@ export default defineSchema({
     created_at: v.number(),
   })
     .index("by_slug", ["slug"])
-    .index("by_public", ["is_public"]),
+    .index("by_public", ["is_public"])
+    .index("by_author_time", ["author", "created_at"]),
 
   answers: defineTable({
     question_id: v.id("questions"),
     persona_id: v.id("personas"),
     text: v.string(),
-    stance: v.union(v.literal("support"), v.literal("neutral"), v.literal("oppose")),
+    stance: v.union(
+      v.literal("support"),
+      v.literal("neutral"),
+      v.literal("oppose"),
+    ),
     like_count: v.number(),
     liked_by: v.array(v.id("personas")),
     created_at: v.number(),
@@ -89,6 +119,5 @@ export default defineSchema({
     target_id: v.optional(v.string()),
     score: v.number(),
     created_at: v.number(),
-  })
-    .index("by_question", ["question_id"]),
+  }).index("by_question", ["question_id"]),
 });

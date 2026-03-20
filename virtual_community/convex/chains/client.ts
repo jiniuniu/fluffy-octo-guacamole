@@ -8,5 +8,8 @@ export function getLLM(temperature = 0.7) {
       baseURL: "https://openrouter.ai/api/v1",
       apiKey: process.env.OPENROUTER_API_KEY,
     },
+    modelKwargs: {
+      thinking: { type: "disabled" },
+    },
   });
 }

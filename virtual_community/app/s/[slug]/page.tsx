@@ -47,7 +47,7 @@ export default function PublicQuestionPage({
       <div className="flex flex-1 flex-col overflow-hidden border-r border-border">
         {/* header */}
         <div className="shrink-0 border-b border-border px-4 py-3">
-          <div className="flex items-start gap-2">
+          <div className="mx-auto max-w-3xl flex items-start gap-2">
             <button
               onClick={() => router.push("/")}
               className="mt-0.5 shrink-0 text-muted-foreground hover:text-foreground transition-colors"
@@ -73,14 +73,14 @@ export default function PublicQuestionPage({
 
         {/* answers */}
         <div className="flex-1 overflow-y-auto">
-          {questionId && <AnswerList questionId={questionId} />}
+          {questionId && <AnswerList questionId={questionId} readonly />}
         </div>
       </div>
 
       {/* right panel */}
       <div className="flex w-80 shrink-0 flex-col overflow-hidden">
         <div className="shrink-0 border-b border-border">
-          {questionId && <Dashboard questionId={questionId} />}
+          {questionId && <Dashboard questionId={questionId} readonly />}
         </div>
         <div className="flex-1 overflow-hidden">
           {questionId && <ActivityLog questionId={questionId} />}

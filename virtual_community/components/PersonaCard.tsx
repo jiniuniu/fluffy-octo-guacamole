@@ -1,34 +1,44 @@
-"use client"
+"use client";
 
-import { useState, useRef } from "react"
+import { useState, useRef } from "react";
 
 type Persona = {
-  cluster_label: string
-  demo: { age: number; gender: string; city: string; education: string; occupation: string }
-  bio: string
-}
+  cluster_label: string;
+  demo: {
+    age: number;
+    gender: string;
+    city: string;
+    education: string;
+    occupation: string;
+  };
+  bio: string;
+};
 
 export function PersonaCard({
   persona,
   children,
 }: {
-  persona: Persona
-  children: React.ReactNode
+  persona: Persona;
+  children: React.ReactNode;
 }) {
-  const [visible, setVisible] = useState(false)
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [visible, setVisible] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   function show() {
-    timerRef.current = setTimeout(() => setVisible(true), 300)
+    timerRef.current = setTimeout(() => setVisible(true), 300);
   }
 
   function hide() {
-    if (timerRef.current) clearTimeout(timerRef.current)
-    setVisible(false)
+    if (timerRef.current) clearTimeout(timerRef.current);
+    setVisible(false);
   }
 
   return (
-    <span className="relative inline-block" onMouseEnter={show} onMouseLeave={hide}>
+    <span
+      className="relative inline-block"
+      onMouseEnter={show}
+      onMouseLeave={hide}
+    >
       {children}
       {visible && (
         <div className="absolute left-0 top-full z-50 mt-1.5 w-72 rounded-lg border border-border bg-background p-3 shadow-lg">
@@ -38,16 +48,20 @@ export function PersonaCard({
               {persona.cluster_label}
             </span>
             <span className="text-xs text-muted-foreground">
-              {persona.demo.age}岁 · {persona.demo.gender === "male" ? "男" : "女"} · {persona.demo.city}
+              {persona.demo.age}岁 ·{" "}
+              {persona.demo.gender === "male" ? "男" : "女"} ·{" "}
+              {persona.demo.city}
             </span>
           </div>
           <div className="mb-2 text-xs text-muted-foreground">
             {persona.demo.occupation} · {persona.demo.education}
           </div>
           {/* bio */}
-          <p className="text-xs leading-relaxed text-foreground">{persona.bio}</p>
+          <p className="text-xs leading-relaxed text-foreground">
+            {persona.bio}
+          </p>
         </div>
       )}
     </span>
-  )
+  );
 }

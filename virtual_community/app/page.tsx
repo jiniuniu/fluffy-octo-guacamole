@@ -3,9 +3,11 @@
 import { useQuery } from "convex/react"
 import { api } from "@/convex/_generated/api"
 import { useRouter } from "next/navigation"
-import { ThumbsUpIcon, MessageSquareIcon, PlusIcon } from "lucide-react"
+import { ThumbsUpIcon, MessageSquareIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { SignInButton, UserButton, useUser } from "@clerk/nextjs"
+import { NetworkHero } from "@/components/NetworkHero"
+import { Logo } from "@/components/Logo"
 
 export default function Home() {
   const questions = useQuery(api.questions.listPublic)
@@ -16,15 +18,17 @@ export default function Home() {
     <div className="min-h-screen bg-background">
       {/* top nav */}
       <header className="sticky top-0 z-10 border-b border-border bg-background/80 backdrop-blur">
-        <div className="mx-auto flex max-w-2xl items-center justify-between px-4 py-3">
-          <span className="font-semibold text-foreground">虚拟社区广场</span>
-          <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between px-12 py-3">
+          <Logo variant="full" size={24} className="text-foreground" />
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => router.push("/how-it-works")}
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              How it works
+            </button>
             {isSignedIn ? (
               <>
-                <Button size="sm" onClick={() => router.push("/new")}>
-                  <PlusIcon className="mr-1.5 size-3.5" />
-                  提问
-                </Button>
                 <UserButton />
               </>
             ) : (
@@ -36,12 +40,14 @@ export default function Home() {
         </div>
       </header>
 
+      <NetworkHero isSignedIn={!!isSignedIn} />
+
       {/* feed */}
-      <main className="mx-auto max-w-2xl px-4 py-6 space-y-3">
+      <main className="mx-auto max-w-5xl px-12 py-6">
         {questions === undefined && (
-          <div className="space-y-3">
-            {[...Array(4)].map((_, i) => (
-              <div key={i} className="h-32 animate-pulse rounded-xl border border-border bg-muted/40" />
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="h-40 animate-pulse rounded-xl border border-border bg-muted/40" />
             ))}
           </div>
         )}
@@ -53,9 +59,13 @@ export default function Home() {
           </div>
         )}
 
-        {questions?.map((q) => (
-          <FeedCard key={q._id} question={q} onClick={() => router.push(`/s/${q.slug}`)} />
-        ))}
+        {questions && questions.length > 0 && (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {questions.map((q) => (
+              <FeedCard key={q._id} question={q} onClick={() => router.push(`/s/${q.slug}`)} />
+            ))}
+          </div>
+        )}
       </main>
     </div>
   )
@@ -84,7 +94,7 @@ function FeedCard({
   return (
     <button
       onClick={onClick}
-      className="w-full rounded-xl border border-border bg-background px-5 py-4 text-left transition-colors hover:bg-muted/40"
+      className="w-full cursor-pointer rounded-xl border border-border bg-card px-5 py-4 text-left transition-colors hover:bg-muted"
     >
       {/* question text */}
       <p className="text-sm font-medium leading-relaxed text-foreground line-clamp-3">{question.text}</p>

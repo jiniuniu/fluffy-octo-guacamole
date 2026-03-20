@@ -16,7 +16,9 @@ export const run = internalAction({
       status: "processing",
     });
 
-    const question = await ctx.runQuery(api.questions.getById, { id: question_id });
+    const question = await ctx.runQuery(api.questions.getById, {
+      id: question_id,
+    });
     if (!question) return;
 
     // step 1: extract topic vector
@@ -30,7 +32,10 @@ export const run = internalAction({
     const personas = await ctx.runQuery(api.personas.list, {});
 
     for (const persona of personas) {
-      const score = computeScore(persona.vector, topicVector as Record<string, number>);
+      const score = computeScore(
+        persona.vector,
+        topicVector as Record<string, number>,
+      );
 
       const existingAnswers = await ctx.runQuery(api.answers.topByQuestion, {
         question_id,
@@ -43,7 +48,7 @@ export const run = internalAction({
         const result = await generateAnswer(
           persona,
           question.text,
-          existingAnswers.map((a) => ({ text: a.text, stance: a.stance }))
+          existingAnswers.map((a) => ({ text: a.text, stance: a.stance })),
         );
         const answerId = await ctx.runMutation(api.answers.create, {
           question_id,
@@ -113,17 +118,21 @@ export const replyToUser = action({
     const answer = await ctx.runQuery(api.answers.getById, { id: answer_id });
     if (!answer) return;
 
-    const question = await ctx.runQuery(api.questions.getById, { id: answer.question_id });
+    const question = await ctx.runQuery(api.questions.getById, {
+      id: answer.question_id,
+    });
     if (!question) return;
 
-    const persona = await ctx.runQuery(api.personas.getById, { id: answer.persona_id });
+    const persona = await ctx.runQuery(api.personas.getById, {
+      id: answer.persona_id,
+    });
     if (!persona) return;
 
     const result = await generateReplyToUser(
       persona,
       question.text,
       answer.text,
-      user_reply_text
+      user_reply_text,
     );
 
     await ctx.runMutation(api.replies.create, {
@@ -141,4 +150,3 @@ export const replyToUser = action({
     });
   },
 });
-
