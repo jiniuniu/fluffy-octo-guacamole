@@ -217,7 +217,7 @@ export default function HowItWorks() {
               {
                 n: "2",
                 title: "叠加人口统计多样性",
-                body: "参考第七次全国人口普查数据（性别、年龄、城乡、学历、职业、地区），确保同一价值观类型的人在人口统计上不重叠——进步派不全是年轻城市女性，传统派不全是农村老年男性。",
+                body: "参考第七次全国人口普查数据，在性别、年龄、城乡、学历、职业、地区六个维度上约束采样，确保同一价值观类型的人在人口统计上不重叠——进步派不全是年轻城市女性，传统派不全是农村老年男性。",
               },
               {
                 n: "3",
@@ -242,6 +242,91 @@ export default function HowItWorks() {
                 </div>
               </div>
             ))}
+          </div>
+
+          {/* census data */}
+          <div className="rounded-xl border border-border bg-card p-5 space-y-4">
+            <p className="text-xs text-muted-foreground uppercase tracking-widest">
+              第七次全国人口普查参考数据
+            </p>
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+              {[
+                {
+                  label: "性别",
+                  items: [
+                    { name: "男", pct: 51.2 },
+                    { name: "女", pct: 48.8 },
+                  ],
+                },
+                {
+                  label: "城乡",
+                  items: [
+                    { name: "城镇", pct: 63.9 },
+                    { name: "农村", pct: 36.1 },
+                  ],
+                },
+                {
+                  label: "地区",
+                  items: [
+                    { name: "东部", pct: 39.9 },
+                    { name: "中部", pct: 25.8 },
+                    { name: "西部", pct: 27.1 },
+                    { name: "东北", pct: 7.0 },
+                  ],
+                },
+                {
+                  label: "年龄",
+                  items: [
+                    { name: "18–29岁", pct: 16 },
+                    { name: "30–44岁", pct: 22 },
+                    { name: "45–59岁", pct: 25 },
+                    { name: "60岁以上", pct: 19 },
+                  ],
+                },
+                {
+                  label: "学历",
+                  items: [
+                    { name: "大学及以上", pct: 17 },
+                    { name: "高中/中专", pct: 17 },
+                    { name: "初中", pct: 38 },
+                    { name: "小学及以下", pct: 28 },
+                  ],
+                },
+                {
+                  label: "职业",
+                  items: [
+                    { name: "农业", pct: 23 },
+                    { name: "制造业", pct: 24 },
+                    { name: "服务业", pct: 20 },
+                    { name: "白领", pct: 15 },
+                    { name: "专业技术", pct: 10 },
+                    { name: "其他", pct: 8 },
+                  ],
+                },
+              ].map((group) => (
+                <div key={group.label} className="space-y-1.5">
+                  <p className="text-xs font-medium text-foreground">
+                    {group.label}
+                  </p>
+                  {group.items.map((item) => (
+                    <div key={item.name} className="flex items-center gap-2">
+                      <span className="text-xs text-muted-foreground w-20 shrink-0">
+                        {item.name}
+                      </span>
+                      <div className="flex-1 h-1 rounded-full bg-muted overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-primary/40"
+                          style={{ width: `${item.pct}%` }}
+                        />
+                      </div>
+                      <span className="text-xs text-muted-foreground w-8 text-right">
+                        {item.pct}%
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
           </div>
 
           <div className="rounded-xl border border-border bg-card p-5 space-y-2">
