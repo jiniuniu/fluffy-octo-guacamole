@@ -3,9 +3,8 @@
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { use } from "react";
-import { useRouter } from "next/navigation";
 import { AnswerList } from "@/components/AnswerList";
-import { Logo } from "@/components/Logo";
+import { TopNav } from "@/components/TopNav";
 import { Id } from "@/convex/_generated/dataModel";
 
 export default function PublicQuestionPage({
@@ -14,7 +13,6 @@ export default function PublicQuestionPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = use(params);
-  const router = useRouter();
   const question = useQuery(api.questions.getBySlug, { slug });
 
   if (question === null) {
@@ -29,21 +27,7 @@ export default function PublicQuestionPage({
 
   return (
     <div className="min-h-screen bg-background">
-
-      {/* Top nav */}
-      <nav className="sticky top-0 z-10 flex items-center justify-between px-12 h-16 bg-background/80 backdrop-blur-xl border-b border-border/30">
-        <Logo
-          variant="full"
-          className="h-9 w-auto text-primary cursor-pointer hover:opacity-70 transition-opacity"
-          onClick={() => router.push("/")}
-        />
-        <button
-          onClick={() => router.push("/")}
-          className="text-[10px] font-bold tracking-widest uppercase text-muted-foreground hover:text-foreground transition-colors"
-        >
-          ← 返回广场
-        </button>
-      </nav>
+      <TopNav back />
 
       {/* Centered content */}
       <main className="mx-auto max-w-2xl px-6 py-12">

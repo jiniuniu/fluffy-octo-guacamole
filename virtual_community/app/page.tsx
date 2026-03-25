@@ -3,11 +3,10 @@
 import { useQuery } from "convex/react"
 import { api } from "@/convex/_generated/api"
 import { useRouter } from "next/navigation"
-import { ThumbsUpIcon, MessageSquareIcon } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { SignInButton, UserButton, useUser } from "@clerk/nextjs"
+import { MessageSquareIcon } from "lucide-react"
+import { useUser } from "@clerk/nextjs"
 import { NetworkHero } from "@/components/NetworkHero"
-import { Logo } from "@/components/Logo"
+import { TopNav } from "@/components/TopNav"
 
 export default function Home() {
   const questions = useQuery(api.questions.listPublic)
@@ -16,38 +15,23 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* top nav */}
-      <header className="sticky top-0 z-10 border-b border-border bg-background/80 backdrop-blur">
-        <div className="flex items-center justify-between px-12 py-3">
-          <Logo variant="full" className="h-9 w-auto text-primary" />
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => router.push("/how-it-works")}
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              How it works
-            </button>
-            {isSignedIn ? (
-              <>
-                <UserButton />
-              </>
-            ) : (
-              <SignInButton mode="modal">
-                <Button size="sm" variant="outline">登录 / 注册</Button>
-              </SignInButton>
-            )}
-          </div>
-        </div>
-      </header>
+      <TopNav />
 
       <NetworkHero isSignedIn={!!isSignedIn} />
 
       {/* feed */}
-      <main className="mx-auto max-w-5xl px-12 py-6">
+      <main className="mx-auto max-w-5xl px-12 py-10">
+        {/* section label */}
+        <div className="mb-6">
+          <span className="text-[10px] font-bold tracking-widest uppercase text-muted-foreground">
+            广场 · 公开讨论
+          </span>
+        </div>
+
         {questions === undefined && (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {[...Array(6)].map((_, i) => (
-              <div key={i} className="h-40 animate-pulse rounded-xl border border-border bg-muted/40" />
+              <div key={i} className="h-36 animate-pulse rounded bg-[#f6f3f2]" />
             ))}
           </div>
         )}
@@ -55,12 +39,12 @@ export default function Home() {
         {questions?.length === 0 && (
           <div className="py-20 text-center">
             <p className="text-sm text-muted-foreground">还没有公开的问题</p>
-            <p className="mt-1 text-xs text-muted-foreground/60">发布问题后在详情页将其设为公开即可出现在这里</p>
+            <p className="mt-1 text-xs text-muted-foreground/50">发布问题后在详情页将其设为公开即可出现在这里</p>
           </div>
         )}
 
         {questions && questions.length > 0 && (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {questions.map((q) => (
               <FeedCard key={q._id} question={q} onClick={() => router.push(`/s/${q.slug}`)} />
             ))}
@@ -81,9 +65,6 @@ function FeedCard({
     title?: string
     status: string
     slug?: string
-    support?: number
-    oppose?: number
-    neutral?: number
   }
   onClick: () => void
 }) {
@@ -95,32 +76,36 @@ function FeedCard({
   return (
     <button
       onClick={onClick}
-      className="w-full cursor-pointer rounded-xl border border-border bg-card px-5 py-4 text-left transition-colors hover:bg-muted"
+      className="group w-full text-left bg-[#f6f3f2] hover:bg-[#eae8e7] rounded px-5 py-4 transition-colors"
     >
-      {/* question text */}
-      <p className="text-sm font-medium leading-relaxed text-foreground line-clamp-3">{question.title ?? question.text}</p>
+      {/* title */}
+      <p className="text-sm font-semibold leading-relaxed text-foreground line-clamp-2 mb-3">
+        {question.title ?? question.text}
+      </p>
 
       {/* stance bar */}
       {total > 0 && (
-        <div className="mt-3 flex h-1.5 w-full overflow-hidden rounded-full bg-muted">
+        <div className="flex h-[3px] w-full overflow-hidden rounded-full bg-[#e4e2e2] mb-3">
           <div className="h-full bg-primary transition-all" style={{ width: `${pct(stats!.support)}%` }} />
-          <div className="h-full bg-muted-foreground/40 transition-all" style={{ width: `${pct(stats!.neutral)}%` }} />
+          <div className="h-full bg-muted-foreground/30 transition-all" style={{ width: `${pct(stats!.neutral)}%` }} />
           <div className="h-full bg-secondary transition-all" style={{ width: `${pct(stats!.oppose)}%` }} />
         </div>
       )}
 
-      {/* meta row */}
-      <div className="mt-2.5 flex items-center gap-4 text-xs text-muted-foreground">
+      {/* meta */}
+      <div className="flex items-center gap-4 text-[10px] font-semibold tracking-wider uppercase text-muted-foreground">
         <span className="flex items-center gap-1">
-          <MessageSquareIcon className="size-3" />
+          <MessageSquareIcon className="size-2.5" />
           {stats?.answered ?? 0} 条回答
         </span>
-        <span className="flex items-center gap-1">
-          <ThumbsUpIcon className="size-3" />
-          {stats?.totalLikes ?? 0} 赞
-        </span>
+        {total > 0 && (
+          <span className="flex items-center gap-2 ml-auto">
+            <span className="text-primary">{pct(stats!.support)}% 支持</span>
+            <span className="text-secondary">{pct(stats!.oppose)}% 反对</span>
+          </span>
+        )}
         {question.status === "processing" && (
-          <span className="ml-auto animate-pulse text-blue-500">进行中</span>
+          <span className="ml-auto animate-pulse text-primary">进行中</span>
         )}
       </div>
     </button>

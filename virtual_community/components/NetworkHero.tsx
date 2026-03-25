@@ -1,20 +1,22 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { Button } from "@/components/ui/button";
 import { SignInButton } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 
-const NODE_COUNT = 60;
+const NODE_COUNT = 50;
 const MAX_DIST = 130;
-const SPEED = 0.4;
+const SPEED = 0.35;
+
+// Design system primary: #066b53
+const PRIMARY_R = 6, PRIMARY_G = 107, PRIMARY_B = 83;
 
 interface Node {
   x: number;
   y: number;
   vx: number;
   vy: number;
-  r: number; // avatar radius
+  r: number;
 }
 
 function drawPerson(
@@ -26,8 +28,7 @@ function drawPerson(
 ) {
   ctx.save();
   ctx.globalAlpha = alpha;
-  ctx.fillStyle = "rgba(210,170,80,1)";
-  ctx.lineWidth = 1.2;
+  ctx.fillStyle = `rgb(${PRIMARY_R},${PRIMARY_G},${PRIMARY_B})`;
 
   // head
   ctx.beginPath();
@@ -66,7 +67,7 @@ export function NetworkHero({ isSignedIn }: { isSignedIn: boolean }) {
         y: Math.random() * h,
         vx: (Math.random() - 0.5) * SPEED,
         vy: (Math.random() - 0.5) * SPEED,
-        r: 6 + Math.random() * 4,
+        r: 5 + Math.random() * 4,
       }));
     }
 
@@ -75,7 +76,6 @@ export function NetworkHero({ isSignedIn }: { isSignedIn: boolean }) {
       const h = canvas!.height;
       ctx!.clearRect(0, 0, w, h);
 
-      // update positions
       for (const n of nodes) {
         n.x += n.vx;
         n.y += n.vy;
@@ -85,18 +85,16 @@ export function NetworkHero({ isSignedIn }: { isSignedIn: boolean }) {
         if (n.y > h + 20) n.y = -20;
       }
 
-      // draw edges
+      // edges
       for (let i = 0; i < nodes.length; i++) {
         for (let j = i + 1; j < nodes.length; j++) {
-          const a = nodes[i],
-            b = nodes[j];
-          const dx = a.x - b.x,
-            dy = a.y - b.y;
+          const a = nodes[i], b = nodes[j];
+          const dx = a.x - b.x, dy = a.y - b.y;
           const dist = Math.sqrt(dx * dx + dy * dy);
           if (dist < MAX_DIST) {
-            const alpha = (1 - dist / MAX_DIST) * 0.25;
+            const alpha = (1 - dist / MAX_DIST) * 0.18;
             ctx!.beginPath();
-            ctx!.strokeStyle = `rgba(210,170,80,${alpha * 2})`;
+            ctx!.strokeStyle = `rgba(${PRIMARY_R},${PRIMARY_G},${PRIMARY_B},${alpha})`;
             ctx!.lineWidth = 0.8;
             ctx!.moveTo(a.x, a.y);
             ctx!.lineTo(b.x, b.y);
@@ -105,10 +103,9 @@ export function NetworkHero({ isSignedIn }: { isSignedIn: boolean }) {
         }
       }
 
-      // draw nodes
+      // nodes
       for (const n of nodes) {
-        const alpha = 0.55 + Math.random() * 0.1; // subtle flicker
-        ctx!.strokeStyle = `rgba(210,170,80,1)`;
+        const alpha = 0.18 + Math.random() * 0.06;
         drawPerson(ctx!, n.x, n.y, n.r, alpha);
       }
 
@@ -118,9 +115,7 @@ export function NetworkHero({ isSignedIn }: { isSignedIn: boolean }) {
     init();
     draw();
 
-    const ro = new ResizeObserver(() => {
-      init();
-    });
+    const ro = new ResizeObserver(() => { init(); });
     ro.observe(canvas);
 
     return () => {
@@ -131,50 +126,46 @@ export function NetworkHero({ isSignedIn }: { isSignedIn: boolean }) {
 
   return (
     <section
-      className="relative overflow-hidden border-b border-border bg-background"
-      style={{ height: 360 }}
+      className="relative overflow-hidden border-b border-border/30 bg-background"
+      style={{ height: 340 }}
     >
       <canvas ref={canvasRef} className="absolute inset-0 h-full w-full" />
 
-      {/* gradient fade edges */}
-      <div className="absolute inset-0 bg-linear-to-b from-background/30 via-transparent to-background/50 pointer-events-none" />
+      {/* subtle gradient fade */}
+      <div className="absolute inset-0 bg-linear-to-b from-background/20 via-transparent to-background/60 pointer-events-none" />
 
       {/* content */}
       <div className="relative z-10 flex h-full flex-col items-center justify-center text-center px-6">
-        <h1 className="font-serif text-4xl font-bold tracking-tight text-foreground drop-shadow-sm">
-          虚拟网民的社区
-        </h1>
-        <p className="mt-3 max-w-md text-base text-muted-foreground">
-          基于真实价值观数据构建的虚拟人格，不止一种声音
+        <p className="text-[10px] font-bold tracking-widest uppercase text-primary/60 mb-3">
+          Virtual Community
         </p>
-        {!isSignedIn && (
-          <div className="mt-6 flex gap-3">
+        <h1 className="text-4xl font-bold tracking-tight text-foreground leading-tight">
+          不止一种声音
+        </h1>
+        <p className="mt-3 max-w-sm text-sm text-muted-foreground leading-relaxed">
+          基于真实价值观数据构建的虚拟人格，模拟真实社会的多元回应
+        </p>
+        {!isSignedIn ? (
+          <div className="mt-7 flex gap-3">
             <SignInButton mode="modal">
-              <Button
-                size="lg"
-                className="transition-all duration-300 hover:shadow-[0_0_20px_4px_rgba(210,170,80,0.5)] hover:brightness-110"
-              >
+              <button className="bg-primary text-white text-xs font-bold tracking-widest uppercase px-6 py-2.5 rounded hover:bg-primary/90 transition-all active:scale-95">
                 立即加入
-              </Button>
+              </button>
             </SignInButton>
-            <Button
-              size="lg"
-              variant="outline"
-              className="transition-all duration-300 hover:shadow-[0_0_20px_4px_rgba(210,170,80,0.3)] hover:border-[rgba(210,170,80,0.6)] hover:brightness-110"
+            <button
               onClick={() => router.push("/how-it-works")}
+              className="text-xs font-bold tracking-widest uppercase px-6 py-2.5 rounded border border-primary/30 text-primary hover:bg-primary/5 transition-all"
             >
               了解更多
-            </Button>
+            </button>
           </div>
-        )}
-        {isSignedIn && (
-          <Button
-            size="lg"
-            className="mt-6 transition-all duration-300 hover:shadow-[0_0_20px_4px_rgba(210,170,80,0.5)] hover:brightness-110"
+        ) : (
+          <button
             onClick={() => router.push("/new")}
+            className="mt-7 bg-primary text-white text-xs font-bold tracking-widest uppercase px-6 py-2.5 rounded hover:bg-primary/90 transition-all active:scale-95"
           >
             发起一个问题
-          </Button>
+          </button>
         )}
       </div>
     </section>
