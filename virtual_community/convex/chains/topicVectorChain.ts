@@ -1,6 +1,8 @@
 "use node";
 
 import { z } from "zod";
+import { StructuredOutputParser } from "@langchain/core/output_parsers";
+import { ChatPromptTemplate } from "@langchain/core/prompts";
 import { getLLM } from "./client";
 
 const DIMENSIONS: Record<string, string> = {
@@ -49,20 +51,30 @@ const TopicVectorSchema = z.object({
   MAQ02: z.number().min(0).max(1).optional(),
 });
 
-const SYSTEM_PROMPT = `你是一个社会学分析助手。给定一个用户问题，分析它涉及哪些价值观维度，并给出每个维度的相关度分数（0=完全无关，1=高度相关）。
+const parser = StructuredOutputParser.fromZodSchema(TopicVectorSchema);
+
+const prompt = ChatPromptTemplate.fromMessages([
+  [
+    "system",
+    `你是一个社会学分析助手。给定一个用户问题，分析它涉及哪些价值观维度，并给出每个维度的相关度分数（0=完全无关，1=高度相关）。
 
 可用维度：
 ${Object.entries(DIMENSIONS)
   .map(([k, v]) => `- ${k}: ${v}`)
   .join("\n")}
 
-只输出相关度大于0.1的维度，不相关的维度可以省略。`;
+只输出相关度大于0.1的维度，不相关的维度省略。
+
+{format_instructions}`,
+  ],
+  ["user", "{question}"],
+]);
 
 export async function extractTopicVector(questionText: string) {
   const llm = getLLM(0);
-  const structured = llm.withStructuredOutput(TopicVectorSchema);
-  return await structured.invoke([
-    { role: "system", content: SYSTEM_PROMPT },
-    { role: "user", content: questionText },
-  ]);
+  const chain = prompt.pipe(llm).pipe(parser);
+  return await chain.invoke({
+    question: questionText,
+    format_instructions: parser.getFormatInstructions(),
+  });
 }

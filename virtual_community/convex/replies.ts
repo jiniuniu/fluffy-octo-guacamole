@@ -1,4 +1,4 @@
-import { mutation, query } from "./_generated/server";
+import { mutation, internalMutation, query } from "./_generated/server";
 import { v } from "convex/values";
 
 export const byAnswer = query({
@@ -11,7 +11,25 @@ export const byAnswer = query({
   },
 });
 
-// called by simulation internally
+// called by simulation internally (via internalMutation — not exposed to clients)
+export const createInternal = internalMutation({
+  args: {
+    answer_id: v.id("answers"),
+    persona_id: v.id("personas"),
+    text: v.string(),
+  },
+  handler: async (ctx, { answer_id, persona_id, text }) => {
+    return await ctx.db.insert("replies", {
+      answer_id,
+      author: persona_id,
+      persona_id,
+      text,
+      created_at: Date.now(),
+    });
+  },
+});
+
+// kept for backwards compat (used by simulation.run via api.replies.create)
 export const create = mutation({
   args: {
     answer_id: v.id("answers"),

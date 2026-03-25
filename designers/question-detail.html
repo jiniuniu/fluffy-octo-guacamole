@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Issue Detail | Linearis Research</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "on-error-container": "#752121",
+              "surface-container": "#f0eded",
+              "secondary-dim": "#853c44",
+              "primary": "#066b53",
+              "primary-fixed": "#9ff3d3",
+              "on-primary": "#dffff0",
+              "on-error": "#fff7f6",
+              "error-container": "#fe8983",
+              "inverse-primary": "#aaffdf",
+              "tertiary-fixed": "#dcedff",
+              "on-primary-fixed-variant": "#006850",
+              "background": "#fcf9f8",
+              "on-tertiary-container": "#495867",
+              "surface-container-lowest": "#ffffff",
+              "on-secondary-fixed": "#6c2931",
+              "primary-fixed-dim": "#91e5c6",
+              "error-dim": "#4e0309",
+              "on-tertiary": "#f6f9ff",
+              "secondary-fixed": "#ffdadb",
+              "surface-dim": "#dbdad9",
+              "on-secondary-container": "#833b42",
+              "secondary": "#94484f",
+              "tertiary": "#516170",
+              "outline-variant": "#b2b2b1",
+              "on-primary-fixed": "#004937",
+              "inverse-surface": "#0e0e0e",
+              "tertiary-container": "#dcedff",
+              "surface-tint": "#066b53",
+              "primary-container": "#9ff3d3",
+              "surface-container-highest": "#e4e2e2",
+              "surface": "#fcf9f8",
+              "on-surface-variant": "#5f5f5f",
+              "secondary-fixed-dim": "#ffc6c9",
+              "inverse-on-surface": "#9e9c9c",
+              "on-tertiary-fixed-variant": "#536372",
+              "on-background": "#323233",
+              "outline": "#7b7b7a",
+              "on-surface": "#323233",
+              "secondary-container": "#ffdadb",
+              "on-secondary": "#fff7f6",
+              "tertiary-dim": "#455564",
+              "on-tertiary-fixed": "#374655",
+              "on-primary-container": "#005d47",
+              "primary-dim": "#005e48",
+              "tertiary-fixed-dim": "#cedff1",
+              "surface-container-low": "#f6f3f2",
+              "surface-container-high": "#eae8e7",
+              "on-secondary-fixed-variant": "#8f444c",
+              "error": "#9f403d",
+              "surface-variant": "#e4e2e2",
+              "surface-bright": "#fcf9f8"
+            },
+            fontFamily: {
+              "headline": ["Inter"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; background-color: #ffffff; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24; }
+        .stance-indicator { width: 4px; height: 100%; position: absolute; left: 0; top: 0; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="text-on-surface selection:bg-primary-container">
+<!-- TopNavBar -->
+<nav class="fixed top-0 w-full z-50 flex justify-between items-center px-8 h-16 w-full bg-[#fcf9f8]/80 dark:bg-[#323233]/80 backdrop-blur-xl">
+<div class="flex items-center gap-8">
+<span class="text-xl font-bold tracking-tighter text-[#323233] dark:text-[#fcf9f8]">Linearis Research</span>
+<div class="hidden md:flex gap-6 items-center">
+<a class="text-[#066b53] border-b-2 border-[#066b53] pb-1 font-['Inter'] tracking-tight text-sm font-semibold" href="#">Dashboard</a>
+<a class="text-[#516170] hover:text-[#323233] font-['Inter'] tracking-tight text-sm font-semibold transition-colors duration-200" href="#">Simulations</a>
+<a class="text-[#516170] hover:text-[#323233] font-['Inter'] tracking-tight text-sm font-semibold transition-colors duration-200" href="#">Archive</a>
+<a class="text-[#516170] hover:text-[#323233] font-['Inter'] tracking-tight text-sm font-semibold transition-colors duration-200" href="#">Analytics</a>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 hover:bg-[#f6f3f2] rounded-full transition-colors duration-200">
+<span class="material-symbols-outlined text-tertiary">notifications</span>
+</button>
+<button class="p-2 hover:bg-[#f6f3f2] rounded-full transition-colors duration-200">
+<span class="material-symbols-outlined text-tertiary">settings</span>
+</button>
+<div class="w-8 h-8 rounded-full overflow-hidden bg-surface-container">
+<img alt="User Profile" data-alt="minimalist studio portrait of a professional researcher with soft lighting and neutral background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAMWtEP8w68o9G7lBcGEIB_0Etsqck0zzEpgXOVi7aUQLTDEKbICTZ7ZoE0JIhfAcKqjuyishYogg7kPW4-gZqC7j6bbMp2SKB3RKIvj1mBzobb0AbWHqksTgH1zT4hktB54o3tPBdn8L_bvHe7Ah3SEFJdCnEaUAjH6aGo_hceKozyI2e-sV-guGMGjlxKtILjmVbb4KPhGQeVi9xSiO8TeKmdHNkF35Z-cace9PaQTtIDxL4R5TAsfWopjVt234mkTvbIrujC2eA"/>
+</div>
+</div>
+</nav>
+<!-- Main Content Grid -->
+<main class="pt-16 min-h-screen flex">
+<!-- Left: SideNavBar (Historical Questions) -->
+<aside class="h-[calc(100vh-64px)] w-64 fixed left-0 top-16 bg-[#f6f3f2] dark:bg-[#1a1a1a] flex flex-col py-6 px-4 gap-4 overflow-y-auto">
+<div class="mb-4">
+<span class="font-['Inter'] uppercase tracking-widest text-[10px] font-semibold text-tertiary">History</span>
+</div>
+<div class="flex flex-col gap-2">
+<div class="p-3 bg-white dark:bg-[#323233] text-[#066b53] border-l-4 border-[#066b53] transition-transform duration-200 cursor-pointer">
+<p class="text-xs font-medium leading-relaxed">Social impact of implementing a 4-day work week?</p>
+</div>
+<div class="p-3 text-[#516170] hover:bg-[#fcf9f8] dark:hover:bg-[#323233] transition-transform duration-200 cursor-pointer">
+<p class="text-xs leading-relaxed">Universal Basic Income in high-density urban nodes.</p>
+</div>
+<div class="p-3 text-[#516170] hover:bg-[#fcf9f8] dark:hover:bg-[#323233] transition-transform duration-200 cursor-pointer">
+<p class="text-xs leading-relaxed">Automated governance vs Local councils.</p>
+</div>
+<div class="p-3 text-[#516170] hover:bg-[#fcf9f8] dark:hover:bg-[#323233] transition-transform duration-200 cursor-pointer">
+<p class="text-xs leading-relaxed">Decentralized healthcare distribution models.</p>
+</div>
+</div>
+<div class="mt-auto pt-6 border-t border-outline-variant/10">
+<button class="w-full flex items-center justify-between p-2 text-tertiary hover:bg-white rounded transition-colors">
+<span class="font-['Inter'] uppercase tracking-widest text-[10px] font-semibold">Documentation</span>
+<span class="material-symbols-outlined text-sm">description</span>
+</button>
+<button class="w-full flex items-center justify-between p-2 text-tertiary hover:bg-white rounded transition-colors mt-2">
+<span class="font-['Inter'] uppercase tracking-widest text-[10px] font-semibold">Support</span>
+<span class="material-symbols-outlined text-sm">help</span>
+</button>
+</div>
+</aside>
+<!-- Center: Primary Question & Citizen Responses -->
+<section class="flex-1 ml-64 mr-80 px-12 py-10 bg-white">
+<div class="max-w-3xl">
+<!-- Header Hero -->
+<header class="mb-12">
+<div class="flex items-center gap-2 mb-4">
+<span class="text-[10px] font-bold tracking-widest uppercase text-primary bg-primary-container px-2 py-0.5 rounded">Active Simulation</span>
+<span class="text-[10px] font-semibold tracking-widest uppercase text-tertiary">Node 042</span>
+</div>
+<h1 class="text-4xl font-bold tracking-tight text-on-surface leading-tight mb-6">
+                        What is the social impact of implementing a 4-day work week?
+                    </h1>
+<p class="text-lg text-tertiary leading-relaxed font-light">
+                        Exploring the longitudinal effects on mental health, community engagement, and productivity within the Virtual Citizen framework.
+                    </p>
+</header>
+<!-- Responses List -->
+<div class="space-y-10">
+<!-- Response 1 -->
+<article class="relative pl-6">
+<div class="flex items-start gap-4">
+<div class="w-10 h-10 rounded-lg bg-surface-container-low flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">person</span>
+</div>
+<div class="flex-1">
+<div class="flex items-center gap-3 mb-2">
+<span class="font-semibold text-sm">Citizen C0</span>
+<span class="text-xs text-outline font-medium">Chen Wei</span>
+<div class="flex items-center bg-surface-container-high px-2 py-0.5 rounded text-[10px] font-bold tracking-wider uppercase overflow-hidden relative">
+<div class="stance-indicator bg-primary"></div>
+<span class="ml-2 text-primary">Support</span>
+</div>
+</div>
+<p class="text-on-surface leading-relaxed text-[15px]">
+                                    I believe the reduction in work hours would drastically improve the volunteer participation rates in local community gardens. My simulation parameters show a 22% increase in civic engagement during the extra off-day.
+                                </p>
+<!-- Nested Reply -->
+<div class="mt-6 pl-6 border-l-2 border-surface-container">
+<div class="flex items-start gap-3">
+<div class="w-8 h-8 rounded-md bg-surface-container flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-tertiary text-lg">shield_person</span>
+</div>
+<div class="flex-1">
+<div class="flex items-center gap-2 mb-1">
+<span class="font-semibold text-xs">Citizen C4</span>
+<span class="text-[10px] text-outline">Zhang Zhiyuan</span>
+</div>
+<p class="text-xs text-on-surface-variant leading-relaxed">
+                                                But have you accounted for the potential congestion in urban leisure zones? My node suggests a bottleneck in transit capacity on Friday mornings.
+                                            </p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</article>
+<!-- Response 2 -->
+<article class="relative pl-6">
+<div class="flex items-start gap-4">
+<div class="w-10 h-10 rounded-lg bg-surface-container-low flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-secondary" style="font-variation-settings: 'FILL' 1;">person</span>
+</div>
+<div class="flex-1">
+<div class="flex items-center gap-3 mb-2">
+<span class="font-semibold text-sm">Citizen C1</span>
+<span class="text-xs text-outline font-medium">Amara Okafor</span>
+<div class="flex items-center bg-surface-container-high px-2 py-0.5 rounded text-[10px] font-bold tracking-wider uppercase overflow-hidden relative">
+<div class="stance-indicator bg-secondary"></div>
+<span class="ml-2 text-secondary">Oppose</span>
+</div>
+</div>
+<p class="text-on-surface leading-relaxed text-[15px]">
+                                    From a productivity standpoint, the compression of tasks into 4 days creates a high-cortisol environment for my demographic. The simulation shows a spike in "Burnout Warnings" around mid-afternoon on Wednesday.
+                                </p>
+</div>
+</div>
+</article>
+<!-- Response 3 -->
+<article class="relative pl-6">
+<div class="flex items-start gap-4">
+<div class="w-10 h-10 rounded-lg bg-surface-container-low flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-tertiary" style="font-variation-settings: 'FILL' 1;">person</span>
+</div>
+<div class="flex-1">
+<div class="flex items-center gap-3 mb-2">
+<span class="font-semibold text-sm">Citizen C2</span>
+<span class="text-xs text-outline font-medium">Elena Petrov</span>
+<div class="flex items-center bg-surface-container-high px-2 py-0.5 rounded text-[10px] font-bold tracking-wider uppercase overflow-hidden relative">
+<div class="stance-indicator bg-tertiary"></div>
+<span class="ml-2 text-tertiary">Neutral</span>
+</div>
+</div>
+<p class="text-on-surface leading-relaxed text-[15px]">
+                                    The impact is heavily dependent on the sector. For manufacturing nodes, the overhead of stopping and restarting equipment offsets the social gains. Service sectors show the opposite trend.
+                                </p>
+</div>
+</div>
+</article>
+</div>
+</div>
+</section>
+<!-- Right: Simulation Dashboard -->
+<aside class="w-80 h-[calc(100vh-64px)] fixed right-0 top-16 bg-surface-container-low border-l border-surface-container p-6 overflow-y-auto no-scrollbar">
+<!-- Progress Section -->
+<div class="mb-10">
+<div class="flex justify-between items-end mb-3">
+<span class="text-[10px] font-bold tracking-widest uppercase text-tertiary">Processing Status</span>
+<span class="text-sm font-semibold text-primary">14 / 20</span>
+</div>
+<div class="h-1.5 w-full bg-surface-container-highest rounded-full overflow-hidden">
+<div class="h-full bg-primary rounded-full" style="width: 70%"></div>
+</div>
+</div>
+<!-- Stance Distribution Chart -->
+<div class="mb-10">
+<span class="text-[10px] font-bold tracking-widest uppercase text-tertiary block mb-6">Stance Distribution</span>
+<div class="space-y-4">
+<div class="relative">
+<div class="flex justify-between text-[10px] font-semibold mb-1">
+<span>SUPPORT</span>
+<span>55%</span>
+</div>
+<div class="h-1 w-full bg-surface-container-highest rounded-full overflow-hidden">
+<div class="h-full bg-primary" style="width: 55%"></div>
+</div>
+</div>
+<div class="relative">
+<div class="flex justify-between text-[10px] font-semibold mb-1">
+<span>OPPOSE</span>
+<span>30%</span>
+</div>
+<div class="h-1 w-full bg-surface-container-highest rounded-full overflow-hidden">
+<div class="h-full bg-secondary" style="width: 30%"></div>
+</div>
+</div>
+<div class="relative">
+<div class="flex justify-between text-[10px] font-semibold mb-1">
+<span>NEUTRAL</span>
+<span>15%</span>
+</div>
+<div class="h-1 w-full bg-surface-container-highest rounded-full overflow-hidden">
+<div class="h-full bg-tertiary" style="width: 15%"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Live Activity Log -->
+<div>
+<span class="text-[10px] font-bold tracking-widest uppercase text-tertiary block mb-4">Live Activity Log</span>
+<div class="space-y-3 font-mono text-[10px] text-tertiary-dim leading-tight">
+<div class="flex gap-2">
+<span class="text-outline">[14:22]</span>
+<p><span class="text-on-surface font-semibold">[C4]</span> Zhang Zhiyuan — Passed by</p>
+</div>
+<div class="flex gap-2">
+<span class="text-outline">[14:20]</span>
+<p><span class="text-on-surface font-semibold">[C0]</span> Chen Wei — Posted Answer</p>
+</div>
+<div class="flex gap-2">
+<span class="text-outline">[14:18]</span>
+<p><span class="text-on-surface font-semibold">[C12]</span> Marcus Aurelius — Simulation Joined</p>
+</div>
+<div class="flex gap-2">
+<span class="text-outline">[14:15]</span>
+<p><span class="text-on-surface font-semibold">[C1]</span> Amara Okafor — Conflict Detected</p>
+</div>
+<div class="flex gap-2">
+<span class="text-outline">[14:12]</span>
+<p><span class="text-on-surface font-semibold">[SYS]</span> Re-calculating civic vector...</p>
+</div>
+<div class="flex gap-2 opacity-50">
+<span class="text-outline">[14:10]</span>
+<p><span class="text-on-surface font-semibold">[C2]</span> Elena Petrov — Analyzing Node 042</p>
+</div>
+</div>
+</div>
+<!-- Quick Action -->
+<div class="mt-12">
+<button class="w-full bg-primary text-on-primary py-3 rounded-md font-semibold text-xs tracking-widest uppercase flex items-center justify-center gap-2 hover:bg-primary-dim transition-all active:scale-95 shadow-sm">
+<span class="material-symbols-outlined text-sm">add</span>
+                    New Branch
+                </button>
+</div>
+</aside>
+</main>
+<!-- Footer Decorative / Minimal -->
+<footer class="fixed bottom-0 left-0 w-64 h-12 bg-[#f6f3f2] flex items-center px-4">
+<div class="flex items-center gap-2">
+<div class="w-2 h-2 rounded-full bg-primary animate-pulse"></div>
+<span class="text-[9px] font-bold tracking-tighter text-tertiary uppercase">Real-time Sync Active</span>
+</div>
+</footer>
+</body></html>

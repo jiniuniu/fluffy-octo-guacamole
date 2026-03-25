@@ -30,21 +30,25 @@ export const create = mutation({
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) throw new Error("Not authenticated");
 
-    const startOfDay = new Date();
-    startOfDay.setHours(0, 0, 0, 0);
+    const isAdmin = (identity as any).metadata?.role === "admin";
 
-    const todayCount = await ctx.db
-      .query("questions")
-      .withIndex("by_author_time", (q) =>
-        q
-          .eq("author", identity.subject)
-          .gte("created_at", startOfDay.getTime()),
-      )
-      .collect()
-      .then((r) => r.length);
+    if (!isAdmin) {
+      const startOfDay = new Date();
+      startOfDay.setHours(0, 0, 0, 0);
 
-    if (todayCount >= DAILY_LIMIT) {
-      throw new Error("DAILY_LIMIT_EXCEEDED");
+      const todayCount = await ctx.db
+        .query("questions")
+        .withIndex("by_author_time", (q) =>
+          q
+            .eq("author", identity.subject)
+            .gte("created_at", startOfDay.getTime()),
+        )
+        .collect()
+        .then((r) => r.length);
+
+      if (todayCount >= DAILY_LIMIT) {
+        throw new Error("DAILY_LIMIT_EXCEEDED");
+      }
     }
 
     const id = await ctx.db.insert("questions", {
@@ -64,7 +68,10 @@ export const dailyUsage = query({
   args: {},
   handler: async (ctx) => {
     const identity = await ctx.auth.getUserIdentity();
-    if (!identity) return { used: 0, limit: DAILY_LIMIT };
+    if (!identity) return { used: 0, limit: DAILY_LIMIT, isAdmin: false };
+
+    const isAdmin = (identity as any).metadata?.role === "admin";
+    if (isAdmin) return { used: 0, limit: DAILY_LIMIT, isAdmin: true };
 
     const startOfDay = new Date();
     startOfDay.setHours(0, 0, 0, 0);
@@ -79,7 +86,18 @@ export const dailyUsage = query({
       .collect()
       .then((r) => r.length);
 
-    return { used, limit: DAILY_LIMIT };
+    return { used, limit: DAILY_LIMIT, isAdmin: false };
+  },
+});
+
+export const updateEnriched = mutation({
+  args: {
+    id: v.id("questions"),
+    title: v.string(),
+    description: v.string(),
+  },
+  handler: async (ctx, { id, title, description }) => {
+    await ctx.db.patch(id, { title, description });
   },
 });
 

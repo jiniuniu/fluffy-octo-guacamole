@@ -5,22 +5,8 @@ import { api } from "@/convex/_generated/api";
 import { use } from "react";
 import { useRouter } from "next/navigation";
 import { AnswerList } from "@/components/AnswerList";
-import { ActivityLog } from "@/components/ActivityLog";
-import { Dashboard } from "@/components/Dashboard";
+import { Logo } from "@/components/Logo";
 import { Id } from "@/convex/_generated/dataModel";
-import { ArrowLeftIcon } from "lucide-react";
-
-const STATUS_BADGE: Record<string, string> = {
-  pending: "bg-zinc-100 text-zinc-500",
-  processing: "bg-blue-50 text-blue-600 animate-pulse",
-  done: "bg-green-50 text-green-600",
-};
-
-const STATUS_TEXT: Record<string, string> = {
-  pending: "等待中",
-  processing: "虚拟网民正在响应...",
-  done: "已完成",
-};
 
 export default function PublicQuestionPage({
   params,
@@ -33,7 +19,7 @@ export default function PublicQuestionPage({
 
   if (question === null) {
     return (
-      <div className="flex h-screen items-center justify-center">
+      <div className="flex h-screen items-center justify-center bg-background">
         <p className="text-sm text-muted-foreground">找不到该问题</p>
       </div>
     );
@@ -42,50 +28,75 @@ export default function PublicQuestionPage({
   const questionId = question?._id as Id<"questions"> | undefined;
 
   return (
-    <div className="flex h-screen overflow-hidden">
-      {/* main feed */}
-      <div className="flex flex-1 flex-col overflow-hidden border-r border-border">
-        {/* header */}
-        <div className="shrink-0 border-b border-border px-4 py-3">
-          <div className="mx-auto max-w-3xl flex items-start gap-2">
-            <button
-              onClick={() => router.push("/")}
-              className="mt-0.5 shrink-0 text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <ArrowLeftIcon className="size-4" />
-            </button>
-            {question ? (
-              <>
-                <p className="flex-1 text-sm font-medium leading-relaxed">
-                  {question.text}
-                </p>
-                <span
-                  className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_BADGE[question.status]}`}
-                >
-                  {STATUS_TEXT[question.status]}
-                </span>
-              </>
-            ) : (
-              <div className="h-5 w-48 animate-pulse rounded bg-muted" />
+    <div className="min-h-screen bg-background">
+
+      {/* Top nav */}
+      <nav className="sticky top-0 z-10 flex items-center justify-between px-12 h-16 bg-background/80 backdrop-blur-xl border-b border-border/30">
+        <Logo
+          variant="full"
+          className="h-9 w-auto text-primary cursor-pointer hover:opacity-70 transition-opacity"
+          onClick={() => router.push("/")}
+        />
+        <button
+          onClick={() => router.push("/")}
+          className="text-[10px] font-bold tracking-widest uppercase text-muted-foreground hover:text-foreground transition-colors"
+        >
+          ← 返回广场
+        </button>
+      </nav>
+
+      {/* Centered content */}
+      <main className="mx-auto max-w-2xl px-6 py-12">
+
+        {/* Question header */}
+        {question ? (
+          <header className="mb-10">
+            <div className="mb-4">
+              <StatusBadge status={question.status} />
+            </div>
+            <h1 className="text-3xl font-bold tracking-tight text-foreground leading-tight">
+              {(question as any).title ?? question.text}
+            </h1>
+            {(question as any).description && (
+              <p className="mt-3 text-sm text-muted-foreground leading-relaxed">
+                {(question as any).description}
+              </p>
             )}
+          </header>
+        ) : (
+          <div className="mb-10 space-y-3">
+            <div className="h-3 w-24 animate-pulse rounded bg-muted" />
+            <div className="h-8 w-2/3 animate-pulse rounded bg-muted" />
+            <div className="h-4 w-full animate-pulse rounded bg-muted" />
           </div>
-        </div>
+        )}
 
-        {/* answers */}
-        <div className="flex-1 overflow-y-auto">
-          {questionId && <AnswerList questionId={questionId} readonly />}
-        </div>
-      </div>
-
-      {/* right panel */}
-      <div className="flex w-80 shrink-0 flex-col overflow-hidden">
-        <div className="shrink-0 border-b border-border">
-          {questionId && <Dashboard questionId={questionId} readonly />}
-        </div>
-        <div className="flex-1 overflow-hidden">
-          {questionId && <ActivityLog questionId={questionId} />}
-        </div>
-      </div>
+        {/* Answers */}
+        {questionId && <AnswerList questionId={questionId} readonly />}
+      </main>
     </div>
+  );
+}
+
+function StatusBadge({ status }: { status: string }) {
+  if (status === "processing") {
+    return (
+      <span className="inline-flex items-center gap-1.5 text-[10px] font-bold tracking-widest uppercase text-primary bg-primary/10 px-2.5 py-1 rounded">
+        <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+        虚拟网民正在响应...
+      </span>
+    );
+  }
+  if (status === "done") {
+    return (
+      <span className="text-[10px] font-bold tracking-widest uppercase text-muted-foreground">
+        已完成
+      </span>
+    );
+  }
+  return (
+    <span className="text-[10px] font-bold tracking-widest uppercase text-muted-foreground">
+      等待中
+    </span>
   );
 }

@@ -161,7 +161,7 @@ export function NetworkHero({ isSignedIn }: { isSignedIn: boolean }) {
               size="lg"
               variant="outline"
               className="transition-all duration-300 hover:shadow-[0_0_20px_4px_rgba(210,170,80,0.3)] hover:border-[rgba(210,170,80,0.6)] hover:brightness-110"
-              onClick={() => {}}
+              onClick={() => router.push("/how-it-works")}
             >
               了解更多
             </Button>

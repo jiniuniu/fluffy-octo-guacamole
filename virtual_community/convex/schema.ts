@@ -64,6 +64,8 @@ export default defineSchema({
 
   questions: defineTable({
     text: v.string(),
+    title: v.optional(v.string()),
+    description: v.optional(v.string()),
     author: v.string(),
     status: v.union(
       v.literal("pending"),

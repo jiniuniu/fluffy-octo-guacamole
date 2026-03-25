@@ -1,0 +1,27 @@
+<svg width="520" height="80" viewBox="0 0 520 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+
+  <!-- "people" solid bold -->
+  <text
+    x="8"
+    y="56"
+    font-family="Inter, system-ui, sans-serif"
+    font-size="52"
+    font-weight="700"
+    letter-spacing="-1.5"
+    fill="#066b53"
+  >people</text>
+
+  <!-- space + "square" outline only, slightly smaller, wide tracking -->
+  <text
+    x="242"
+    y="56"
+    font-family="Inter, system-ui, sans-serif"
+    font-size="36"
+    font-weight="600"
+    letter-spacing="8"
+    fill="none"
+    stroke="#066b53"
+    stroke-width="1.2"
+  >square</text>
+
+</svg>

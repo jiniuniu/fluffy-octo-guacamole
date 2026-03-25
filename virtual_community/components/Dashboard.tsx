@@ -1,13 +1,11 @@
 "use client";
 
-import { useQuery, useMutation } from "convex/react";
+import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
-import { GlobeIcon, LockIcon } from "lucide-react";
 
 export function Dashboard({
   questionId,
-  readonly = false,
 }: {
   questionId: Id<"questions">;
   readonly?: boolean;
@@ -15,7 +13,6 @@ export function Dashboard({
   const stats = useQuery(api.questions.stats, { id: questionId });
   const question = useQuery(api.questions.getById, { id: questionId });
   const personas = useQuery(api.personas.list);
-  const setPublic = useMutation(api.questions.setPublic);
 
   if (!stats) return null;
 
@@ -29,123 +26,80 @@ export function Dashboard({
       ? 0
       : Math.min(100, Math.round((stats.saw / totalPersonas) * 100));
 
-  const isPublic = question?.is_public ?? false;
-
   return (
-    <div className="px-4 py-3 space-y-3">
-      {/* public toggle */}
-      {!readonly && (
-        <button
-          onClick={() => setPublic({ id: questionId, is_public: !isPublic })}
-          className="flex w-full items-center gap-2 rounded-md border border-border px-2.5 py-1.5 text-xs transition-colors hover:bg-muted"
-        >
-          {isPublic ? (
-            <GlobeIcon className="size-3.5 text-green-500" />
-          ) : (
-            <LockIcon className="size-3.5 text-muted-foreground" />
-          )}
-          <span
-            className={
-              isPublic ? "text-green-600 font-medium" : "text-muted-foreground"
-            }
-          >
-            {isPublic ? "已公开 · 在广场可见" : "私密 · 仅自己可见"}
+    <div className="space-y-6">
+
+      {/* Processing progress */}
+      <div>
+        <div className="flex justify-between items-end mb-2">
+          <span className="text-[10px] font-bold tracking-widest uppercase text-muted-foreground">
+            处理进度
           </span>
-          {isPublic && question?.slug && (
-            <span className="ml-auto font-mono text-muted-foreground/60">
-              {question.slug}
-            </span>
-          )}
-        </button>
-      )}
-
-      {/* progress bar when processing */}
-      {isProcessing && (
-        <div className="space-y-1">
-          <div className="flex justify-between text-xs text-muted-foreground">
-            <span className="animate-pulse">处理中...</span>
-            <span>
-              {stats.saw} / {totalPersonas}
-            </span>
-          </div>
-          <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
-            <div
-              className="h-full rounded-full bg-blue-500 transition-all duration-500"
-              style={{ width: `${progressPct}%` }}
-            />
-          </div>
+          <span className="text-sm font-semibold text-primary tabular-nums">
+            {stats.saw} / {totalPersonas}
+          </span>
         </div>
-      )}
-
-      {/* stance bars */}
-      <div className="flex gap-3">
-        <StanceItem
-          label="支持"
-          count={stats.support}
-          pct={pct(stats.support)}
-          color="bg-green-500"
-        />
-        <StanceItem
-          label="反对"
-          count={stats.oppose}
-          pct={pct(stats.oppose)}
-          color="bg-red-500"
-        />
-        <StanceItem
-          label="中立"
-          count={stats.neutral}
-          pct={pct(stats.neutral)}
-          color="bg-zinc-400"
-        />
+        <div className="h-1 w-full bg-[#eae8e7] rounded-full overflow-hidden">
+          <div
+            className={`h-full bg-primary rounded-full transition-all duration-500 ${isProcessing ? "animate-pulse" : ""}`}
+            style={{ width: `${progressPct}%` }}
+          />
+        </div>
       </div>
 
-      {/* behavior breakdown */}
-      <div className="grid grid-cols-3 gap-x-2 gap-y-1.5 border-t border-border pt-2.5">
-        <StatCell label="看到" value={stats.saw} />
-        <StatCell label="路过" value={stats.ignored} />
-        <StatCell label="点赞问题" value={stats.likedQ} />
-        <StatCell label="回答" value={stats.answered} />
-        <StatCell label="点赞回答" value={stats.likedAnswer} />
-        <StatCell label="回复评论" value={stats.replied} />
+      {/* Stance distribution */}
+      <div>
+        <span className="text-[10px] font-bold tracking-widest uppercase text-muted-foreground block mb-4">
+          立场分布
+        </span>
+        <div className="space-y-3">
+          <StanceBar label="支持" pct={pct(stats.support)} color="bg-primary" textColor="text-primary" />
+          <StanceBar label="反对" pct={pct(stats.oppose)}  color="bg-secondary" textColor="text-secondary" />
+          <StanceBar label="中立" pct={pct(stats.neutral)} color="bg-muted-foreground/40" textColor="text-muted-foreground" />
+        </div>
       </div>
+
+      {/* Behavior breakdown */}
+      <div>
+        <span className="text-[10px] font-bold tracking-widest uppercase text-muted-foreground block mb-3">
+          行为明细
+        </span>
+        <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+          <StatRow label="路过"     value={stats.ignored} />
+          <StatRow label="点赞问题" value={stats.likedQ} />
+          <StatRow label="回答"     value={stats.answered} />
+          <StatRow label="点赞回答" value={stats.likedAnswer} />
+          <StatRow label="回复"     value={stats.replied} />
+        </div>
+      </div>
+
     </div>
   );
 }
 
-function StanceItem({
-  label,
-  count,
-  pct,
-  color,
+function StanceBar({
+  label, pct, color, textColor,
 }: {
-  label: string;
-  count: number;
-  pct: number;
-  color: string;
+  label: string; pct: number; color: string; textColor: string;
 }) {
   return (
-    <div className="flex flex-1 flex-col gap-1">
-      <div className="flex justify-between text-xs">
-        <span className="text-muted-foreground">{label}</span>
-        <span className="font-medium text-foreground">{count}</span>
+    <div>
+      <div className="flex justify-between text-[10px] font-semibold mb-1">
+        <span className="text-muted-foreground tracking-wider">{label}</span>
+        <span className={textColor}>{pct}%</span>
       </div>
-      <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
-        <div
-          className={`h-full rounded-full transition-all duration-500 ${color}`}
-          style={{ width: `${pct}%` }}
-        />
+      <div className="h-0.75 w-full bg-[#eae8e7] rounded-full overflow-hidden">
+        <div className={`h-full ${color} transition-all duration-500`} style={{ width: `${pct}%` }} />
       </div>
     </div>
   );
 }
 
-function StatCell({ label, value }: { label: string; value: number }) {
+function StatRow({ label, value }: { label: string; value: number }) {
   return (
-    <div className="flex items-baseline gap-1.5">
-      <span className="text-sm font-semibold tabular-nums text-foreground">
-        {value}
-      </span>
-      <span className="text-xs text-muted-foreground">{label}</span>
+    <div className="flex items-baseline justify-between">
+      <span className="text-[10px] text-muted-foreground tracking-wide">{label}</span>
+      <span className="text-sm font-semibold tabular-nums text-foreground">{value}</span>
     </div>
   );
 }

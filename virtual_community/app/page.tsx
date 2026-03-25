@@ -19,7 +19,7 @@ export default function Home() {
       {/* top nav */}
       <header className="sticky top-0 z-10 border-b border-border bg-background/80 backdrop-blur">
         <div className="flex items-center justify-between px-12 py-3">
-          <Logo variant="full" size={24} className="text-foreground" />
+          <Logo variant="full" className="h-9 w-auto text-primary" />
           <div className="flex items-center gap-3">
             <button
               onClick={() => router.push("/how-it-works")}
@@ -78,6 +78,7 @@ function FeedCard({
   question: {
     _id: string
     text: string
+    title?: string
     status: string
     slug?: string
     support?: number
@@ -97,14 +98,14 @@ function FeedCard({
       className="w-full cursor-pointer rounded-xl border border-border bg-card px-5 py-4 text-left transition-colors hover:bg-muted"
     >
       {/* question text */}
-      <p className="text-sm font-medium leading-relaxed text-foreground line-clamp-3">{question.text}</p>
+      <p className="text-sm font-medium leading-relaxed text-foreground line-clamp-3">{question.title ?? question.text}</p>
 
       {/* stance bar */}
       {total > 0 && (
         <div className="mt-3 flex h-1.5 w-full overflow-hidden rounded-full bg-muted">
-          <div className="h-full bg-green-500 transition-all" style={{ width: `${pct(stats!.support)}%` }} />
-          <div className="h-full bg-zinc-400 transition-all" style={{ width: `${pct(stats!.neutral)}%` }} />
-          <div className="h-full bg-red-500 transition-all" style={{ width: `${pct(stats!.oppose)}%` }} />
+          <div className="h-full bg-primary transition-all" style={{ width: `${pct(stats!.support)}%` }} />
+          <div className="h-full bg-muted-foreground/40 transition-all" style={{ width: `${pct(stats!.neutral)}%` }} />
+          <div className="h-full bg-secondary transition-all" style={{ width: `${pct(stats!.oppose)}%` }} />
         </div>
       )}
 

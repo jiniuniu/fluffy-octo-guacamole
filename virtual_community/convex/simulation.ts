@@ -1,9 +1,10 @@
 "use node";
 
 import { internalAction, action } from "./_generated/server";
-import { api } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 import { v } from "convex/values";
 import { computeScore, sampleAction, pickTargetAnswer } from "../lib/engine";
+import { enrichQuestion } from "./chains/enrichChain";
 import { extractTopicVector } from "./chains/topicVectorChain";
 import { generateAnswer } from "./chains/answerChain";
 import { generateReply, generateReplyToUser } from "./chains/replyChain";
@@ -21,7 +22,15 @@ export const run = internalAction({
     });
     if (!question) return;
 
-    // step 1: extract topic vector
+    // step 1: enrich user input → title + description
+    const enriched = await enrichQuestion(question.text);
+    await ctx.runMutation(api.questions.updateEnriched, {
+      id: question_id,
+      title: enriched.title,
+      description: enriched.description,
+    });
+
+    // step 2: extract topic vector
     const topicVector = await extractTopicVector(question.text);
     await ctx.runMutation(api.questions.updateTopicVector, {
       id: question_id,
@@ -135,13 +144,13 @@ export const replyToUser = action({
       user_reply_text,
     );
 
-    await ctx.runMutation(api.replies.create, {
+    await ctx.runMutation(internal.replies.createInternal, {
       answer_id,
       persona_id: persona._id,
       text: result.text,
     });
 
-    await ctx.runMutation(api.activity_log.create, {
+    await ctx.runMutation(internal.activity_log.createInternal, {
       question_id: answer.question_id,
       persona_id: persona._id,
       action: "reply_answer",
