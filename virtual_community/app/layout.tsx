@@ -15,6 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://peoplesquare.customertalk.cn"),
   title: "People Square",
   description: "基于真实价值观数据的虚拟社区",
 };
