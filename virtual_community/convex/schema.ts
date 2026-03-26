@@ -66,6 +66,7 @@ export default defineSchema({
     text: v.string(),
     title: v.optional(v.string()),
     description: v.optional(v.string()),
+    simulation_size: v.optional(v.number()),
     author: v.string(),
     status: v.union(
       v.literal("pending"),

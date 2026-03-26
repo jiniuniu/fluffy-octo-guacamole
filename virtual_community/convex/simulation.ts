@@ -2,6 +2,8 @@
 
 import { internalAction, action } from "./_generated/server";
 import { api, internal } from "./_generated/api";
+
+const SIMULATION_SIZE = 20;
 import { v } from "convex/values";
 import { computeScore, sampleAction, pickTargetAnswer } from "../lib/engine";
 import { enrichQuestion } from "./chains/enrichChain";
@@ -22,12 +24,14 @@ export const run = internalAction({
     });
     if (!question) return;
 
-    // step 1: enrich user input → title + description
+    // step 1: enrich user input → title + description + simulation_size
     const enriched = await enrichQuestion(question.text);
+    const simulationSize = Math.max(20, Math.min(100, enriched.simulation_size ?? SIMULATION_SIZE));
     await ctx.runMutation(api.questions.updateEnriched, {
       id: question_id,
       title: enriched.title,
       description: enriched.description,
+      simulation_size: simulationSize,
     });
 
     // step 2: extract topic vector
@@ -37,8 +41,8 @@ export const run = internalAction({
       topic_vector: topicVector,
     });
 
-    // step 2: iterate personas serially
-    const personas = await ctx.runQuery(api.personas.list, {});
+    // step 3: sample personas by dynamic size
+    const personas = await ctx.runQuery(api.personas.sample, { n: simulationSize });
 
     for (const persona of personas) {
       const score = computeScore(

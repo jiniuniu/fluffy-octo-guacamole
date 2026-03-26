@@ -34,13 +34,18 @@ const personas = JSON.parse(
 // dynamic import of generated api
 const { api } = await import("../convex/_generated/api.js");
 
+const BATCH = 20; // concurrent mutations per wave
+
 console.log(`Clearing existing personas...`);
 await client.mutation(api.personas.clear);
 
-console.log(`Inserting ${personas.length} personas...`);
-for (const p of personas) {
-  await client.mutation(api.personas.insert, p);
-  console.log(`  ✓ ${p.cluster_label} (cluster ${p.cluster})`);
+console.log(`Inserting ${personas.length} personas (batch=${BATCH})...`);
+let done = 0;
+for (let i = 0; i < personas.length; i += BATCH) {
+  const chunk = personas.slice(i, i + BATCH);
+  await Promise.all(chunk.map((p) => client.mutation(api.personas.insert, p)));
+  done += chunk.length;
+  console.log(`  ${done}/${personas.length}`);
 }
 
 console.log("Done.");

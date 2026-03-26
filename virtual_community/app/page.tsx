@@ -3,7 +3,7 @@
 import { useQuery } from "convex/react"
 import { api } from "@/convex/_generated/api"
 import { useRouter } from "next/navigation"
-import { MessageSquareIcon } from "lucide-react"
+import { MessageSquareIcon, UsersIcon } from "lucide-react"
 import { useUser } from "@clerk/nextjs"
 import { NetworkHero } from "@/components/NetworkHero"
 import { TopNav } from "@/components/TopNav"
@@ -63,6 +63,7 @@ function FeedCard({
     _id: string
     text: string
     title?: string
+    description?: string
     status: string
     slug?: string
   }
@@ -79,9 +80,16 @@ function FeedCard({
       className="group w-full text-left bg-[#f6f3f2] hover:bg-[#eae8e7] rounded px-5 py-4 transition-colors"
     >
       {/* title */}
-      <p className="text-sm font-semibold leading-relaxed text-foreground line-clamp-2 mb-3">
+      <p className="text-sm font-semibold leading-relaxed text-foreground line-clamp-2 mb-1.5">
         {question.title ?? question.text}
       </p>
+
+      {/* description */}
+      {question.description && (
+        <p className="text-[11px] text-muted-foreground leading-relaxed line-clamp-2 mb-3">
+          {question.description}
+        </p>
+      )}
 
       {/* stance bar */}
       {total > 0 && (
@@ -98,6 +106,12 @@ function FeedCard({
           <MessageSquareIcon className="size-2.5" />
           {stats?.answered ?? 0} 条回答
         </span>
+        {(stats?.saw ?? 0) > 0 && (
+          <span className="flex items-center gap-1">
+            <UsersIcon className="size-2.5" />
+            {stats!.saw} 人
+          </span>
+        )}
         {total > 0 && (
           <span className="flex items-center gap-2 ml-auto">
             <span className="text-primary">{pct(stats!.support)}% 支持</span>

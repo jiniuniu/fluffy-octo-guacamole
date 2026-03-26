@@ -1,11 +1,12 @@
 """
-Generate 100 virtual personas from cluster profiles using OpenRouter + LangChain.
+Generate virtual personas from cluster profiles using LangChain + DashScope.
 
 Usage:
-    conda activate <your_env>
-    OPENROUTER_API_KEY=xxx python generate_personas.py
+    python generate_personas.py            # full run (TOTAL personas)
+    python generate_personas.py --test 5   # smoke test, no file output
 
 Output: ../virtual_community/data/personas.json
+Checkpoint: data/personas_checkpoint.jsonl  (delete to start fresh)
 """
 
 import asyncio
@@ -14,20 +15,28 @@ import os
 import random
 from pathlib import Path
 
+from dotenv import load_dotenv
 from langchain.output_parsers import OutputFixingParser
 from langchain_core.output_parsers import PydanticOutputParser
 from langchain_openai import ChatOpenAI
 from pydantic import BaseModel, Field
+from demographics import pick_demo
+
+load_dotenv()
 
 # ---------------------------------------------------------------------------
 # Config
 # ---------------------------------------------------------------------------
 
 PROFILES_FILE = Path("data/output_cluster_profiles.json")
-OUTPUT_FILE = Path("../virtual_community/data/personas.json")
-TOTAL = 100
-MODEL = "google/gemini-3.1-flash-lite-preview"
+OUTPUT_FILE = Path("data/personas.json")
+CHECKPOINT_FILE = Path("data/personas_checkpoint.jsonl")  # one JSON object per line
+TOTAL = 1000
+MODEL = os.environ.get("LLM_MODEL", "qwen3.5-flash")
+API_KEY = os.environ.get("LLM_API_KEY") or os.environ.get("OPENROUTER_API_KEY")
+BASE_URL = os.environ.get("LLM_BASE_URL", "https://dashscope.aliyuncs.com/compatible-mode/v1")
 CONCURRENCY = 10  # parallel LLM calls
+CHUNK_SIZE = 20   # flush to checkpoint after every N personas
 
 CLUSTER_LABELS = {
     0: "现代进步派",
@@ -60,59 +69,6 @@ GROUP_LABELS = {
     "MAQ01": "财富观（一）",
     "MAQ02": "财富观（二）",
 }
-
-CITIES = {
-    "east": [
-        "上海",
-        "广州",
-        "深圳",
-        "杭州",
-        "南京",
-        "苏州",
-        "宁波",
-        "厦门",
-        "青岛",
-        "济南",
-    ],
-    "central": ["武汉", "郑州", "长沙", "合肥", "南昌", "太原", "石家庄"],
-    "west": ["成都", "重庆", "西安", "昆明", "贵阳", "兰州", "乌鲁木齐", "南宁"],
-    "northeast": ["沈阳", "长春", "哈尔滨", "大连"],
-    "county": ["县城", "小镇", "农村"],
-}
-
-OCCUPATIONS = [
-    "工厂工人",
-    "外卖骑手",
-    "快递员",
-    "建筑工人",
-    "超市收银员",
-    "餐厅服务员",
-    "销售",
-    "理发师",
-    "银行柜员",
-    "行政文员",
-    "会计",
-    "教师",
-    "护士",
-    "程序员",
-    "产品经理",
-    "设计师",
-    "市场运营",
-    "医生",
-    "律师",
-    "工程师",
-    "个体户",
-    "小企业主",
-    "电商卖家",
-    "农民",
-    "农村个体经营",
-    "大学生",
-    "待业",
-    "国企职员",
-    "公务员",
-]
-
-EDUCATIONS = ["小学", "初中", "高中", "中专", "大专", "本科", "研究生"]
 
 # ---------------------------------------------------------------------------
 # Pydantic schema
@@ -152,57 +108,6 @@ print("Persona counts per cluster:")
 for k, c in sorted(counts.items()):
     print(f"  C{k} {CLUSTER_LABELS[k]}: {c}")
 print(f"  Total: {sum(counts.values())}")
-
-# ---------------------------------------------------------------------------
-# Demo sampling
-# ---------------------------------------------------------------------------
-
-
-def pick_demo(cluster: int, used_combos: set) -> dict:
-    region_weights = {"east": 4, "central": 3, "west": 3, "northeast": 1, "county": 2}
-
-    for _ in range(50):
-        if cluster in (0, 3):
-            age = random.randint(22, 42)
-        elif cluster == 2:
-            age = random.randint(35, 62)
-        else:
-            age = random.randint(20, 58)
-
-        gender = random.choice(["male", "female"])
-        region = random.choices(
-            list(region_weights), weights=list(region_weights.values())
-        )[0]
-        city = random.choice(CITIES[region])
-
-        if cluster in (0, 3):
-            edu = random.choice(["大专", "本科", "本科", "研究生"])
-        elif cluster in (2, 5):
-            edu = random.choice(["初中", "高中", "高中", "中专", "大专"])
-        else:
-            edu = random.choice(EDUCATIONS)
-
-        occ = random.choice(OCCUPATIONS)
-
-        combo = (cluster, gender, city, occ)
-        if combo not in used_combos:
-            used_combos.add(combo)
-            return {
-                "age": age,
-                "gender": gender,
-                "city": city,
-                "education": edu,
-                "occupation": occ,
-            }
-
-    return {
-        "age": age,
-        "gender": gender,
-        "city": city,
-        "education": edu,
-        "occupation": occ,
-    }
-
 
 # ---------------------------------------------------------------------------
 # Prompt builder
@@ -248,7 +153,7 @@ def build_prompt(cluster: int, demo: dict, format_instructions: str) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Async generation
+# LLM
 # ---------------------------------------------------------------------------
 
 
@@ -256,79 +161,176 @@ def get_llm(temperature=0.9):
     return ChatOpenAI(
         model=MODEL,
         temperature=temperature,
-        openai_api_key=os.environ["OPENROUTER_API_KEY"],
-        openai_api_base="https://openrouter.ai/api/v1",
+        api_key=API_KEY,
+        base_url=BASE_URL,
+        extra_body={"enable_thinking": False},
     )
 
 
-async def generate_one(
-    idx: int, cluster: int, demo: dict, sem: asyncio.Semaphore
-) -> dict | None:
+# ---------------------------------------------------------------------------
+# Token counter (thread-safe accumulator)
+# ---------------------------------------------------------------------------
+
+
+class TokenCounter:
+    def __init__(self):
+        self.prompt = 0
+        self.completion = 0
+        self.total = 0
+
+    def add(self, response):
+        usage = response.response_metadata.get("token_usage", {})
+        self.prompt     += usage.get("prompt_tokens", 0) or 0
+        self.completion += usage.get("completion_tokens", 0) or 0
+        self.total      += usage.get("total_tokens", 0) or 0
+
+    def report(self, n_personas: int):
+        print(f"\n{'─'*50}")
+        print(f"  Token usage summary")
+        print(f"{'─'*50}")
+        print(f"  Prompt tokens:     {self.prompt:>8,}")
+        print(f"  Completion tokens: {self.completion:>8,}")
+        print(f"  Total tokens:      {self.total:>8,}")
+        if n_personas:
+            print(f"  Avg per persona:   {self.total // n_personas:>8,}")
+        print(f"{'─'*50}")
+
+
+# ---------------------------------------------------------------------------
+# Async generation
+# ---------------------------------------------------------------------------
+
+
+async def generate_batch(tasks: list[tuple[int, int, dict]], token_counter: TokenCounter) -> list[dict | None]:
     parser = PydanticOutputParser(pydantic_object=PersonaOutput)
-    fixing_parser = OutputFixingParser.from_llm(
-        parser=parser, llm=get_llm(temperature=0)
-    )
+    fixing_llm = get_llm(temperature=0)
+    fixing_parser = OutputFixingParser.from_llm(parser=parser, llm=fixing_llm)
     llm = get_llm(temperature=0.9)
 
-    prompt = build_prompt(cluster, demo, parser.get_format_instructions())
+    format_instructions = parser.get_format_instructions()
+    prompts = [build_prompt(c, d, format_instructions) for _, c, d in tasks]
 
-    async with sem:
-        for attempt in range(3):
+    # abatch handles concurrency internally (max_concurrency=CONCURRENCY)
+    responses = await llm.abatch(prompts, config={"max_concurrency": CONCURRENCY})
+
+    results = []
+    for (idx, cluster, demo), response in zip(tasks, responses):
+        token_counter.add(response)
+        try:
             try:
-                response = await llm.ainvoke(prompt)
-                try:
-                    output = parser.parse(response.content)
-                except Exception:
-                    output = fixing_parser.parse(response.content)
+                output = parser.parse(response.content)
+            except Exception:
+                output = fixing_parser.parse(response.content)
 
-                base_vector = profiles["profiles"][str(cluster)]["group_deviations"]
-                vector = {
-                    dim: round(base_vector.get(dim, 0.0) + random.gauss(0, 0.15), 4)
-                    for dim in GROUP_LABELS
-                }
+            base_vector = profiles["profiles"][str(cluster)]["group_deviations"]
+            vector = {
+                dim: round(base_vector.get(dim, 0.0) + random.gauss(0, 0.15), 4)
+                for dim in GROUP_LABELS
+            }
 
-                gender_str = "男" if demo["gender"] == "male" else "女"
-                print(
-                    f"  [{idx:3d}] C{cluster} {demo['city']} {demo['occupation']} {demo['age']}岁{gender_str} ✓"
-                )
+            gender_str = "男" if demo["gender"] == "male" else "女"
+            print(f"  [{idx:3d}] C{cluster} {CLUSTER_LABELS[cluster]}  {demo['city']} {demo['occupation']} {demo['age']}岁{gender_str} ✓")
 
-                return {
-                    "cluster": cluster,
-                    "cluster_label": CLUSTER_LABELS[cluster],
-                    "demo": demo,
-                    "bio": output.bio,
-                    "vector": vector,
-                }
-            except Exception as e:
-                print(f"  [{idx:3d}] attempt {attempt+1} failed: {e}")
+            results.append({
+                "cluster": cluster,
+                "cluster_label": CLUSTER_LABELS[cluster],
+                "demo": demo,
+                "bio": output.bio,
+                "vector": vector,
+            })
+        except Exception as e:
+            print(f"  [{idx:3d}] FAILED: {e}")
+            results.append(None)
 
-    print(f"  [{idx:3d}] SKIPPED after 3 failures")
-    return None
+    return results
+
+
+def load_checkpoint() -> tuple[list[dict], set[int]]:
+    """Load already-completed personas from checkpoint file."""
+    if not CHECKPOINT_FILE.exists():
+        return [], set()
+    done = []
+    done_idx = set()
+    with open(CHECKPOINT_FILE, encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if line:
+                obj = json.loads(line)
+                done.append(obj)
+                done_idx.add(obj["_idx"])
+    return done, done_idx
+
+
+def append_checkpoint(persona: dict) -> None:
+    CHECKPOINT_FILE.parent.mkdir(parents=True, exist_ok=True)
+    with open(CHECKPOINT_FILE, "a", encoding="utf-8") as f:
+        f.write(json.dumps(persona, ensure_ascii=False) + "\n")
 
 
 async def main():
+    import sys
+    test_n = None
+    if "--test" in sys.argv:
+        pos = sys.argv.index("--test")
+        test_n = int(sys.argv[pos + 1])
+
+    # build full task list (deterministic order)
     used_combos: set = set()
     tasks = []
-    idx = 1
-
+    i = 1
     for cluster in sorted(counts.keys()):
         for _ in range(counts[cluster]):
             demo = pick_demo(cluster, used_combos)
-            tasks.append((idx, cluster, demo))
-            idx += 1
+            tasks.append((i, cluster, demo))
+            i += 1
 
-    sem = asyncio.Semaphore(CONCURRENCY)
-    print(f"\nGenerating {len(tasks)} personas (concurrency={CONCURRENCY})...\n")
+    if test_n:
+        tasks = tasks[:test_n]
+        print(f"\n[TEST MODE] Running {test_n} personas only\n")
 
-    coros = [generate_one(i, c, d, sem) for i, c, d in tasks]
-    results_raw = await asyncio.gather(*coros)
-    results = [r for r in results_raw if r is not None]
+    # resume from checkpoint
+    completed, done_idx = load_checkpoint()
+    if done_idx and not test_n:
+        print(f"Resuming: {len(done_idx)} personas already done, skipping...\n")
+    pending = [(idx, c, d) for idx, c, d in tasks if idx not in done_idx]
 
-    OUTPUT_FILE.parent.mkdir(parents=True, exist_ok=True)
-    with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
-        json.dump(results, f, ensure_ascii=False, indent=2)
+    print(f"Generating {len(pending)} personas (concurrency={CONCURRENCY}, chunk={CHUNK_SIZE})...\n")
 
-    print(f"\nDone. {len(results)}/{len(tasks)} personas saved to {OUTPUT_FILE}")
+    token_counter = TokenCounter()
+
+    # process in chunks so we checkpoint frequently
+    for chunk_start in range(0, len(pending), CHUNK_SIZE):
+        chunk = pending[chunk_start: chunk_start + CHUNK_SIZE]
+        chunk_end = min(chunk_start + CHUNK_SIZE, len(pending))
+        print(f"--- Chunk {chunk_start + 1}–{chunk_end} / {len(pending)} ---")
+
+        results_raw = await generate_batch(chunk, token_counter)
+
+        for (idx, cluster, demo), result in zip(chunk, results_raw):
+            if result is not None:
+                result["_idx"] = idx
+                if not test_n:
+                    append_checkpoint(result)
+                completed.append(result)
+
+        print(f"  checkpoint: {len(completed)} total saved")
+
+    # strip internal _idx before final output
+    final = [{k: v for k, v in p.items() if k != "_idx"} for p in completed]
+
+    token_counter.report(len(final))
+
+    if not test_n:
+        OUTPUT_FILE.parent.mkdir(parents=True, exist_ok=True)
+        with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
+            json.dump(final, f, ensure_ascii=False, indent=2)
+        print(f"\nDone. {len(final)}/{len(tasks)} personas saved to {OUTPUT_FILE}")
+        print(f"(Checkpoint at {CHECKPOINT_FILE} — delete it to start fresh next time)")
+    else:
+        print(f"\n[TEST MODE] {len(final)}/{len(tasks)} succeeded. Output not saved.")
+        print("\nSample bio:")
+        if final:
+            print(final[0]["bio"])
 
 
 if __name__ == "__main__":

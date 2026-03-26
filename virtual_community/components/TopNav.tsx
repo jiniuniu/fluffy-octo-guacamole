@@ -35,7 +35,7 @@ export function TopNav({ back = false }: TopNavProps) {
               onClick={() => router.push("/how-it-works")}
               className="text-[10px] font-bold tracking-widest uppercase text-muted-foreground hover:text-foreground transition-colors"
             >
-              How it works
+              方法论
             </button>
             {isSignedIn ? (
               <UserButton />

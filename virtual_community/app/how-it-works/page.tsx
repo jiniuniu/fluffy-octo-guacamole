@@ -13,10 +13,10 @@ export default function HowItWorks() {
         {/* title */}
         <section>
           <p className="text-[10px] font-bold tracking-widest uppercase text-muted-foreground mb-4">
-            How It Works
+            方法论
           </p>
           <h1 className="text-4xl font-bold tracking-tight text-foreground leading-tight">
-            这里的网民是怎么来的？
+            我们如何模拟真实社会的声音
           </h1>
           <p className="mt-4 text-sm text-muted-foreground leading-relaxed max-w-lg">
             虚拟社区里的每一位"网民"，都有真实调研数据作为价值观基础。这是一个从数据到人格、再到对话的完整链路。
@@ -100,17 +100,17 @@ export default function HowItWorks() {
         <section className="space-y-6">
           <StepLabel step="03" label="虚拟人生成" />
           <h2 className="text-2xl font-bold tracking-tight text-foreground">
-            价值观 → 有血有肉的人
+            1000 个有数据支撑的人
           </h2>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            每个虚拟网民由 LLM 按三步生成，价值观通过具体的人生故事来体现，而非直接标注标签。
+            我们预先生成了 1000 个虚拟网民并存入数据库。每次模拟时，系统按聚类比例随机抽取参与者，确保每次的声音构成与真实社会一致。
           </p>
 
           <div className="space-y-3">
             {[
-              { n: "1", title: "按比例采样价值观类型", body: "20 个虚拟人按 C0–C5 的真实比例分配（如 C4 沉默中间派约 5 人，C1 乐观爱国派约 4 人），同一类别内部有轻微价值观变化。" },
-              { n: "2", title: "叠加人口统计多样性", body: "参考第七次全国人口普查数据，在性别、年龄、城乡、学历、职业、地区六个维度上约束采样，确保同一价值观类型的人在人口统计上不重叠。" },
-              { n: "3", title: "故事化人物描述", body: "LLM 将价值观标签转化为具体的生活经历、家庭背景和人生选择，生成 150-200 字的人物描述，同时作为用户可读的简介和 LLM 生成评论时的 system prompt。" },
+              { n: "1", title: "按比例分配聚类名额", body: "1000 个虚拟人按 C0–C5 的真实比例分配——C4 沉默中间派最多（280人），C5 功利强权派最少（118人），和原始调研的人群分布完全一致。" },
+              { n: "2", title: "职业驱动的联动采样", body: "以职业为锚点，联动学历和城市层级。不同聚类有不同的职业偏向：C0/C3 更多高知专业和技术白领，C2 更多体力蓝领和农业，C5 最多自营个体。" },
+              { n: "3", title: "故事化人物描述", body: "LLM 将价值观数据转化为具体的生活经历和人生选择，生成 150-200 字的人物小传。不直接标注价值观标签，通过叙事自然体现立场。" },
             ].map((s) => (
               <div key={s.n} className="flex gap-4 bg-[#f6f3f2] rounded px-5 py-4">
                 <span className="font-mono text-2xl font-bold text-primary/20 shrink-0 leading-none mt-0.5">{s.n}</span>
@@ -122,29 +122,124 @@ export default function HowItWorks() {
             ))}
           </div>
 
-          {/* census */}
+          {/* 样本分布：学历 */}
           <div className="bg-[#f6f3f2] rounded p-5">
-            <p className="text-[10px] font-bold tracking-widest uppercase text-muted-foreground mb-4">第七次全国人口普查参考数据</p>
-            <div className="grid grid-cols-2 gap-5 sm:grid-cols-3">
+            <p className="text-[10px] font-bold tracking-widest uppercase text-muted-foreground mb-1">1000人样本 · 学历分布</p>
+            <p className="text-xs text-muted-foreground/60 mb-4">以成年网民为主体，整体学历高于全体人口</p>
+            <div className="space-y-2">
               {[
-                { label: "性别", items: [{ name: "男", pct: 51.2 }, { name: "女", pct: 48.8 }] },
-                { label: "城乡", items: [{ name: "城镇", pct: 63.9 }, { name: "农村", pct: 36.1 }] },
-                { label: "地区", items: [{ name: "东部", pct: 39.9 }, { name: "中部", pct: 25.8 }, { name: "西部", pct: 27.1 }, { name: "东北", pct: 7.0 }] },
-                { label: "年龄", items: [{ name: "18–29岁", pct: 16 }, { name: "30–44岁", pct: 22 }, { name: "45–59岁", pct: 25 }, { name: "60岁以上", pct: 19 }] },
-                { label: "学历", items: [{ name: "大学及以上", pct: 17 }, { name: "高中/中专", pct: 17 }, { name: "初中", pct: 38 }, { name: "小学及以下", pct: 28 }] },
-                { label: "职业", items: [{ name: "农业", pct: 23 }, { name: "制造业", pct: 24 }, { name: "服务业", pct: 20 }, { name: "白领", pct: 15 }] },
-              ].map((group) => (
-                <div key={group.label} className="space-y-1.5">
-                  <p className="text-[10px] font-bold tracking-wider uppercase text-muted-foreground mb-2">{group.label}</p>
-                  {group.items.map((item) => (
-                    <div key={item.name} className="flex items-center gap-2">
-                      <span className="text-xs text-muted-foreground w-16 shrink-0">{item.name}</span>
-                      <div className="flex-1 h-[2px] rounded-full bg-[#eae8e7] overflow-hidden">
-                        <div className="h-full rounded-full bg-primary/50" style={{ width: `${item.pct}%` }} />
-                      </div>
-                      <span className="text-[10px] text-muted-foreground w-8 text-right">{item.pct}%</span>
-                    </div>
-                  ))}
+                { label: "小学",  pct: 6.2 },
+                { label: "初中",  pct: 15.2 },
+                { label: "高中",  pct: 14.7 },
+                { label: "中专",  pct: 11.6 },
+                { label: "大专",  pct: 17.5 },
+                { label: "本科",  pct: 26.0 },
+                { label: "研究生", pct: 8.8 },
+              ].map((item) => (
+                <div key={item.label} className="flex items-center gap-3">
+                  <span className="text-xs text-muted-foreground w-10 shrink-0">{item.label}</span>
+                  <div className="flex-1 h-0.5 rounded-full bg-[#eae8e7] overflow-hidden">
+                    <div className="h-full rounded-full bg-primary/60" style={{ width: `${item.pct / 26 * 100}%` }} />
+                  </div>
+                  <span className="text-[10px] text-muted-foreground w-8 text-right">{item.pct}%</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* 样本分布：城市层级 */}
+          <div className="bg-[#f6f3f2] rounded p-5">
+            <p className="text-[10px] font-bold tracking-widest uppercase text-muted-foreground mb-1">1000人样本 · 城市层级</p>
+            <p className="text-xs text-muted-foreground/60 mb-4">城镇化率 71.6%，高于普查 63.9%，反映网民群体特征</p>
+            <div className="space-y-2">
+              {[
+                { label: "一线城市",  pct: 21.9 },
+                { label: "新一线",    pct: 30.1 },
+                { label: "二线城市",  pct: 19.6 },
+                { label: "三线/县城", pct: 16.4 },
+                { label: "农村",      pct: 12.0 },
+              ].map((item) => (
+                <div key={item.label} className="flex items-center gap-3">
+                  <span className="text-xs text-muted-foreground w-16 shrink-0">{item.label}</span>
+                  <div className="flex-1 h-0.5 rounded-full bg-[#eae8e7] overflow-hidden">
+                    <div className="h-full rounded-full bg-primary/60" style={{ width: `${item.pct / 30.1 * 100}%` }} />
+                  </div>
+                  <span className="text-[10px] text-muted-foreground w-8 text-right">{item.pct}%</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* 交叉分析：学历 × 聚类 */}
+          <div className="bg-[#f6f3f2] rounded p-5">
+            <p className="text-[10px] font-bold tracking-widest uppercase text-muted-foreground mb-1">聚类 × 学历对比</p>
+            <p className="text-xs text-muted-foreground/60 mb-5">本科及以上比例，体现价值观与教育的关联</p>
+            <div className="space-y-3">
+              {[
+                { code: "C0", label: "现代进步派",  pct: 71.6, color: "bg-primary" },
+                { code: "C3", label: "开放理性派",  pct: 60.2, color: "bg-primary" },
+                { code: "C1", label: "乐观爱国派",  pct: 32.8, color: "bg-primary/60" },
+                { code: "C4", label: "沉默中间派",  pct: 21.8, color: "bg-muted-foreground/40" },
+                { code: "C5", label: "功利强权派",  pct: 17.8, color: "bg-secondary/70" },
+                { code: "C2", label: "传统全能派",  pct: 16.5, color: "bg-secondary" },
+              ].map((c) => (
+                <div key={c.code} className="flex items-center gap-3">
+                  <span className="font-mono text-[10px] text-muted-foreground/50 w-6 shrink-0">{c.code}</span>
+                  <span className="text-xs text-muted-foreground w-20 shrink-0">{c.label}</span>
+                  <div className="flex-1 h-0.5 rounded-full bg-[#eae8e7] overflow-hidden">
+                    <div className={`h-full rounded-full ${c.color}`} style={{ width: `${c.pct}%` }} />
+                  </div>
+                  <span className="text-[10px] text-muted-foreground w-8 text-right">{c.pct}%</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* 交叉分析：城市 × 聚类 */}
+          <div className="bg-[#f6f3f2] rounded p-5">
+            <p className="text-[10px] font-bold tracking-widest uppercase text-muted-foreground mb-1">聚类 × 城市层级对比</p>
+            <p className="text-xs text-muted-foreground/60 mb-5">各聚类的一线+新一线城市占比</p>
+            <div className="space-y-3">
+              {[
+                { code: "C0", label: "现代进步派",  pct: 87.9, color: "bg-primary" },
+                { code: "C3", label: "开放理性派",  pct: 87.9, color: "bg-primary" },
+                { code: "C1", label: "乐观爱国派",  pct: 43.3, color: "bg-primary/60" },
+                { code: "C4", label: "沉默中间派",  pct: 46.1, color: "bg-muted-foreground/40" },
+                { code: "C5", label: "功利强权派",  pct: 39.9, color: "bg-secondary/70" },
+                { code: "C2", label: "传统全能派",  pct: 16.5, color: "bg-secondary" },
+              ].map((c) => (
+                <div key={c.code} className="flex items-center gap-3">
+                  <span className="font-mono text-[10px] text-muted-foreground/50 w-6 shrink-0">{c.code}</span>
+                  <span className="text-xs text-muted-foreground w-20 shrink-0">{c.label}</span>
+                  <div className="flex-1 h-0.5 rounded-full bg-[#eae8e7] overflow-hidden">
+                    <div className={`h-full rounded-full ${c.color}`} style={{ width: `${c.pct}%` }} />
+                  </div>
+                  <span className="text-[10px] text-muted-foreground w-8 text-right">{c.pct}%</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* 年龄 */}
+          <div className="bg-[#f6f3f2] rounded p-5">
+            <p className="text-[10px] font-bold tracking-widest uppercase text-muted-foreground mb-1">聚类 · 平均年龄</p>
+            <p className="text-xs text-muted-foreground/60 mb-5">C2 传统全能派均值 49.8 岁，比 C0/C3 年长约 18 年</p>
+            <div className="space-y-3">
+              {[
+                { code: "C0", label: "现代进步派",  age: 31.5 },
+                { code: "C3", label: "开放理性派",  age: 32.1 },
+                { code: "C4", label: "沉默中间派",  age: 39.6 },
+                { code: "C5", label: "功利强权派",  age: 41.0 },
+                { code: "C1", label: "乐观爱国派",  age: 41.1 },
+                { code: "C2", label: "传统全能派",  age: 49.8 },
+              ].map((c) => (
+                <div key={c.code} className="flex items-center gap-3">
+                  <span className="font-mono text-[10px] text-muted-foreground/50 w-6 shrink-0">{c.code}</span>
+                  <span className="text-xs text-muted-foreground w-20 shrink-0">{c.label}</span>
+                  <div className="flex-1 h-0.5 rounded-full bg-[#eae8e7] overflow-hidden">
+                    <div className="h-full rounded-full bg-primary/40" style={{ width: `${(c.age - 30) / 20 * 100}%` }} />
+                  </div>
+                  <span className="text-[10px] text-muted-foreground w-10 text-right">{c.age}岁</span>
                 </div>
               ))}
             </div>
@@ -154,9 +249,9 @@ export default function HowItWorks() {
           <div className="bg-[#f6f3f2] rounded p-5">
             <p className="text-[10px] font-bold tracking-widest uppercase text-muted-foreground mb-3">人物描述示例</p>
             <p className="text-sm text-foreground leading-relaxed">
-              "王芳，42岁，郑州某小学教师。嫁给丈夫后辞掉了省城的工作跟过来，一手带大两个孩子。她妈妈当年也是这么过来的，她觉得这没什么不好。丈夫在外挣钱，她管家里，两人从没为这事红过脸。单位里有几个年轻女老师总说要'自我实现'，她听着只是笑笑，不多说话。"
+              "她嫁过来后就把省城的工作辞了，一手带大两个孩子。婆婆当年也是这么过来的，她觉得这没什么不好。丈夫在外挣钱，她管家里，两人从没为这事红过脸。单位里有几个年轻女老师总说要'自我实现'，她听着只是笑笑，不多说话。"
             </p>
-            <p className="mt-2 text-[10px] text-muted-foreground/50">C2 传统全能派 · 价值观通过经历体现，不直接标注</p>
+            <p className="mt-2 text-[10px] text-muted-foreground/50">C2 传统全能派 · 42岁 · 郑州 · 教师 · 价值观通过经历体现，不直接标注</p>
           </div>
         </section>
 

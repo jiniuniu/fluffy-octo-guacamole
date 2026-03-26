@@ -35,9 +35,11 @@ export default function PublicQuestionPage({
         {/* Question header */}
         {question ? (
           <header className="mb-10">
-            <div className="mb-4">
-              <StatusBadge status={question.status} />
-            </div>
+            {question.status === "processing" && (
+              <div className="mb-4">
+                <StatusBadge status={question.status} />
+              </div>
+            )}
             <h1 className="text-3xl font-bold tracking-tight text-foreground leading-tight">
               {(question as any).title ?? question.text}
             </h1>

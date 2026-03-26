@@ -12,7 +12,6 @@ export function Dashboard({
 }) {
   const stats = useQuery(api.questions.stats, { id: questionId });
   const question = useQuery(api.questions.getById, { id: questionId });
-  const personas = useQuery(api.personas.list);
 
   if (!stats) return null;
 
@@ -20,11 +19,11 @@ export function Dashboard({
   const pct = (n: number) => (total === 0 ? 0 : Math.round((n / total) * 100));
 
   const isProcessing = question?.status === "processing";
-  const totalPersonas = personas?.length ?? 0;
+  const simulationSize = stats.simulation_size ?? 0;
   const progressPct =
-    totalPersonas === 0
+    simulationSize === 0
       ? 0
-      : Math.min(100, Math.round((stats.saw / totalPersonas) * 100));
+      : Math.min(100, Math.round((stats.saw / simulationSize) * 100));
 
   return (
     <div className="space-y-6">
@@ -36,7 +35,7 @@ export function Dashboard({
             处理进度
           </span>
           <span className="text-sm font-semibold text-primary tabular-nums">
-            {stats.saw} / {totalPersonas}
+            {stats.saw} / {simulationSize}
           </span>
         </div>
         <div className="h-1 w-full bg-[#eae8e7] rounded-full overflow-hidden">

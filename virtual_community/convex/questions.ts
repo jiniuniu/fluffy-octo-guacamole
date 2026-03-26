@@ -95,9 +95,10 @@ export const updateEnriched = mutation({
     id: v.id("questions"),
     title: v.string(),
     description: v.string(),
+    simulation_size: v.number(),
   },
-  handler: async (ctx, { id, title, description }) => {
-    await ctx.db.patch(id, { title, description });
+  handler: async (ctx, { id, title, description, simulation_size }) => {
+    await ctx.db.patch(id, { title, description, simulation_size });
   },
 });
 
@@ -184,6 +185,7 @@ export const listPublic = query({
 export const stats = query({
   args: { id: v.id("questions") },
   handler: async (ctx, { id }) => {
+    const question = await ctx.db.get(id);
     const logs = await ctx.db
       .query("activity_log")
       .withIndex("by_question", (q) => q.eq("question_id", id))
@@ -210,6 +212,7 @@ export const stats = query({
 
     return {
       saw,
+      simulation_size: question?.simulation_size ?? null,
       ignored,
       likedQ,
       answered,

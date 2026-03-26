@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/purity */
 "use client";
 
 import { useState, useMemo, useRef } from "react";
@@ -11,15 +12,22 @@ import { PersonaCard } from "@/components/PersonaCard";
 // Left-border color by stance (4px, design system colors)
 const STANCE_BORDER: Record<string, string> = {
   support: "border-l-[3px] border-primary",
-  oppose:  "border-l-[3px] border-secondary",
+  oppose: "border-l-[3px] border-secondary",
   neutral: "border-l-[3px] border-muted-foreground/30",
 };
 
 // Stance chip
-const STANCE_CHIP: Record<string, { label: string; color: string; bar: string }> = {
-  support: { label: "支持", color: "text-primary",          bar: "bg-primary" },
-  oppose:  { label: "反对", color: "text-secondary",        bar: "bg-secondary" },
-  neutral: { label: "中立", color: "text-muted-foreground", bar: "bg-muted-foreground/40" },
+const STANCE_CHIP: Record<
+  string,
+  { label: string; color: string; bar: string }
+> = {
+  support: { label: "支持", color: "text-primary", bar: "bg-primary" },
+  oppose: { label: "反对", color: "text-secondary", bar: "bg-secondary" },
+  neutral: {
+    label: "中立",
+    color: "text-muted-foreground",
+    bar: "bg-muted-foreground/40",
+  },
 };
 
 export function AnswerList({
@@ -90,8 +98,13 @@ export function AnswerList({
             <div className="flex items-center gap-3 mb-2">
               {/* Avatar placeholder */}
               <div className="w-9 h-9 rounded-lg bg-[#f0eded] flex items-center justify-center shrink-0 text-muted-foreground">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/>
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                >
+                  <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z" />
                 </svg>
               </div>
 
@@ -103,7 +116,9 @@ export function AnswerList({
                     </span>
                   </PersonaCard>
                 ) : (
-                  <span className="text-sm font-semibold text-foreground">匿名</span>
+                  <span className="text-sm font-semibold text-foreground">
+                    匿名
+                  </span>
                 )}
                 {persona && (
                   <span className="text-xs text-muted-foreground shrink-0">
@@ -114,7 +129,9 @@ export function AnswerList({
 
               {/* Stance chip — left bar + label */}
               <div className="flex items-center bg-[#eae8e7] px-2 py-0.5 rounded text-[10px] font-bold tracking-wider uppercase overflow-hidden relative shrink-0">
-                <div className={`absolute left-0 top-0 w-[3px] h-full ${chip.bar}`} />
+                <div
+                  className={`absolute left-0 top-0 w-0.75 h-full ${chip.bar}`}
+                />
                 <span className={`ml-2 ${chip.color}`}>{chip.label}</span>
               </div>
             </div>
@@ -146,27 +163,43 @@ export function AnswerList({
                     <div key={reply._id} className="flex items-start gap-3">
                       <div className="w-7 h-7 rounded-md bg-[#f0eded] flex items-center justify-center shrink-0 text-muted-foreground">
                         {isUser ? (
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/>
+                          <svg
+                            width="12"
+                            height="12"
+                            viewBox="0 0 24 24"
+                            fill="currentColor"
+                          >
+                            <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z" />
                           </svg>
                         ) : (
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" opacity="0.6">
-                            <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/>
+                          <svg
+                            width="12"
+                            height="12"
+                            viewBox="0 0 24 24"
+                            fill="currentColor"
+                            opacity="0.6"
+                          >
+                            <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z" />
                           </svg>
                         )}
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
                           {isUser ? (
-                            <span className="text-xs font-semibold text-primary">你</span>
+                            <span className="text-xs font-semibold text-primary">
+                              你
+                            </span>
                           ) : rPersona ? (
                             <PersonaCard persona={rPersona}>
                               <span className="cursor-default text-xs font-semibold text-foreground hover:underline">
-                                {rPersona.demo.city} · {rPersona.demo.occupation}
+                                {rPersona.demo.city} ·{" "}
+                                {rPersona.demo.occupation}
                               </span>
                             </PersonaCard>
                           ) : (
-                            <span className="text-xs font-semibold text-foreground">匿名</span>
+                            <span className="text-xs font-semibold text-foreground">
+                              匿名
+                            </span>
                           )}
                           {!isUser && rPersona && (
                             <span className="text-[10px] text-muted-foreground">
@@ -206,7 +239,9 @@ function ReplyInput({ answerId }: { answerId: Id<"answers"> }) {
       await createUserReply({ answer_id: answerId, text: submitted });
       setText("");
       setOpen(false);
-      replyToUser({ answer_id: answerId, user_reply_text: submitted }).catch(console.error);
+      replyToUser({ answer_id: answerId, user_reply_text: submitted }).catch(
+        console.error,
+      );
     } finally {
       setLoading(false);
     }
@@ -236,7 +271,12 @@ function ReplyInput({ answerId }: { answerId: Id<"answers"> }) {
       <Button size="icon-xs" type="submit" disabled={loading || !text.trim()}>
         <SendIcon />
       </Button>
-      <Button size="icon-xs" variant="ghost" type="button" onClick={() => setOpen(false)}>
+      <Button
+        size="icon-xs"
+        variant="ghost"
+        type="button"
+        onClick={() => setOpen(false)}
+      >
         ✕
       </Button>
     </form>
