@@ -7,9 +7,7 @@ import { getLLM } from "./client";
 
 const AnswerSchema = z.object({
   text: z.string().describe("回答正文，符合人物语气，不要透露自己的身份信息"),
-  stance: z
-    .enum(["support", "neutral", "oppose"])
-    .describe("对问题中主角做法/处境的立场"),
+  stance: z.string().describe("从提供的立场选项中选择一个最符合你观点的，必须完全匹配给定选项之一"),
 });
 
 const parser = StructuredOutputParser.fromZodSchema(AnswerSchema);
@@ -69,6 +67,8 @@ const prompt = ChatPromptTemplate.fromMessages([
 
 字数要求：{length_instruction}
 
+立场选项（必须从以下选项中选一个）：{stances}
+
 {format_instructions}`,
   ],
   ["user", "{user_prompt}"],
@@ -94,6 +94,7 @@ export async function generateAnswer(
   persona: Persona,
   questionText: string,
   existingAnswers: { text: string; stance: string }[],
+  stances: string[],
 ) {
   const style = sampleLengthStyle(persona.cluster_label);
   const llm = getLLM(0.9);
@@ -106,6 +107,7 @@ export async function generateAnswer(
     occupation: persona.demo.occupation,
     education: persona.demo.education,
     length_instruction: LENGTH_INSTRUCTION[style],
+    stances: stances.join(" / "),
     user_prompt: buildUserPrompt(questionText, existingAnswers),
     format_instructions: parser.getFormatInstructions(),
   });

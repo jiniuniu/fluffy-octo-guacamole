@@ -39,11 +39,7 @@ export const create = mutation({
     question_id: v.id("questions"),
     persona_id: v.id("personas"),
     text: v.string(),
-    stance: v.union(
-      v.literal("support"),
-      v.literal("neutral"),
-      v.literal("oppose"),
-    ),
+    stance: v.string(),
   },
   handler: async (ctx, args) => {
     return await ctx.db.insert("answers", {

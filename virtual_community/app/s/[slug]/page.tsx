@@ -5,6 +5,7 @@ import { api } from "@/convex/_generated/api";
 import { use } from "react";
 import { AnswerList } from "@/components/AnswerList";
 import { TopNav } from "@/components/TopNav";
+import { StanceDistribution } from "@/components/StanceDistribution";
 import { Id } from "@/convex/_generated/dataModel";
 
 export default function PublicQuestionPage({
@@ -14,6 +15,8 @@ export default function PublicQuestionPage({
 }) {
   const { slug } = use(params);
   const question = useQuery(api.questions.getBySlug, { slug });
+  const questionId = question?._id as Id<"questions"> | undefined;
+  const stats = useQuery(api.questions.stats, questionId ? { id: questionId } : "skip");
 
   if (question === null) {
     return (
@@ -22,8 +25,6 @@ export default function PublicQuestionPage({
       </div>
     );
   }
-
-  const questionId = question?._id as Id<"questions"> | undefined;
 
   return (
     <div className="min-h-screen bg-background">
@@ -47,6 +48,18 @@ export default function PublicQuestionPage({
               <p className="mt-3 text-sm text-muted-foreground leading-relaxed">
                 {(question as any).description}
               </p>
+            )}
+            {stats && (stats.stanceCounts?.length ?? 0) > 0 && (
+              <div className="mt-6 p-4 bg-[#f6f3f2] rounded-lg">
+                <p className="text-[10px] font-bold tracking-widest uppercase text-muted-foreground mb-3">
+                  立场分布 · {stats.totalAnswers} 条回答 · {stats.saw} 人参与
+                </p>
+                <StanceDistribution
+                  stances={stats.stances}
+                  stanceCounts={stats.stanceCounts}
+                  variant="full"
+                />
+              </div>
             )}
           </header>
         ) : (

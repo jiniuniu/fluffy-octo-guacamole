@@ -96,9 +96,10 @@ export const updateEnriched = mutation({
     title: v.string(),
     description: v.string(),
     simulation_size: v.number(),
+    stances: v.array(v.string()),
   },
-  handler: async (ctx, { id, title, description, simulation_size }) => {
-    await ctx.db.patch(id, { title, description, simulation_size });
+  handler: async (ctx, { id, title, description, simulation_size, stances }) => {
+    await ctx.db.patch(id, { title, description, simulation_size, stances });
   },
 });
 
@@ -205,22 +206,25 @@ export const stats = query({
     const likedAnswer = logs.filter((l) => l.action === "like_answer").length;
     const replied = logs.filter((l) => l.action === "reply_answer").length;
 
-    const support = answers.filter((a) => a.stance === "support").length;
-    const oppose = answers.filter((a) => a.stance === "oppose").length;
-    const neutral = answers.filter((a) => a.stance === "neutral").length;
     const totalLikes = answers.reduce((sum, a) => sum + a.like_count, 0);
+
+    // Dynamic stance breakdown — returned as array to avoid non-ASCII field name restriction
+    const stanceMap: Record<string, number> = {};
+    for (const a of answers) {
+      stanceMap[a.stance] = (stanceMap[a.stance] ?? 0) + 1;
+    }
+    const stanceCounts = Object.entries(stanceMap).map(([stance, count]) => ({ stance, count }));
 
     return {
       saw,
       simulation_size: question?.simulation_size ?? null,
+      stances: question?.stances ?? null,
       ignored,
       likedQ,
       answered,
       likedAnswer,
       replied,
-      support,
-      oppose,
-      neutral,
+      stanceCounts,
       totalAnswers: answers.length,
       totalLikes,
     };

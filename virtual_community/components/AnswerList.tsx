@@ -9,26 +9,19 @@ import { ThumbsUpIcon, SendIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PersonaCard } from "@/components/PersonaCard";
 
-// Left-border color by stance (4px, design system colors)
-const STANCE_BORDER: Record<string, string> = {
-  support: "border-l-[3px] border-primary",
-  oppose: "border-l-[3px] border-secondary",
-  neutral: "border-l-[3px] border-muted-foreground/30",
-};
+const STANCE_PALETTE = [
+  { border: "border-l-[3px] border-primary", text: "text-primary", bar: "bg-primary" },
+  { border: "border-l-[3px] border-secondary", text: "text-secondary", bar: "bg-secondary" },
+  { border: "border-l-[3px] border-amber-500", text: "text-amber-600", bar: "bg-amber-500" },
+  { border: "border-l-[3px] border-muted-foreground/30", text: "text-muted-foreground", bar: "bg-muted-foreground/40" },
+];
 
-// Stance chip
-const STANCE_CHIP: Record<
-  string,
-  { label: string; color: string; bar: string }
-> = {
-  support: { label: "支持", color: "text-primary", bar: "bg-primary" },
-  oppose: { label: "反对", color: "text-secondary", bar: "bg-secondary" },
-  neutral: {
-    label: "中立",
-    color: "text-muted-foreground",
-    bar: "bg-muted-foreground/40",
-  },
-};
+// Build a stance → palette index map from an ordered list of stances
+function buildStanceMap(stances: string[]): Record<string, number> {
+  const map: Record<string, number> = {};
+  stances.forEach((s, i) => { map[s] = i % STANCE_PALETTE.length; });
+  return map;
+}
 
 export function AnswerList({
   questionId,
@@ -38,8 +31,16 @@ export function AnswerList({
   readonly?: boolean;
 }) {
   const answers = useQuery(api.answers.byQuestion, { question_id: questionId });
+  const question = useQuery(api.questions.getById, { id: questionId });
   const personas = useQuery(api.personas.list);
   const personaMap = new Map(personas?.map((p) => [p._id, p]));
+
+  const stanceMap = useMemo(() => {
+    const stances = (question as { stances?: string[] } | null | undefined)?.stances;
+    if (stances && stances.length > 0) return buildStanceMap(stances);
+    // fallback for old data
+    return buildStanceMap(["support", "neutral", "oppose"]);
+  }, [question]);
 
   // Stable explorer index — only re-roll when answer count changes
   const explorerIndexRef = useRef<number | null>(null);
@@ -81,12 +82,13 @@ export function AnswerList({
       {feed.map((answer) => {
         const isExplorer = "_isExplorer" in answer && answer._isExplorer;
         const persona = personaMap.get(answer.persona_id);
-        const chip = STANCE_CHIP[answer.stance];
+        const paletteIdx = stanceMap[answer.stance] ?? (STANCE_PALETTE.length - 1);
+        const palette = STANCE_PALETTE[paletteIdx];
 
         return (
           <article
             key={answer._id}
-            className={`relative pl-6 ${STANCE_BORDER[answer.stance]}`}
+            className={`relative pl-6 ${palette.border}`}
           >
             {isExplorer && (
               <div className="mb-2 text-[10px] font-semibold tracking-widest uppercase text-muted-foreground/50">
@@ -128,11 +130,11 @@ export function AnswerList({
               </div>
 
               {/* Stance chip — left bar + label */}
-              <div className="flex items-center bg-[#eae8e7] px-2 py-0.5 rounded text-[10px] font-bold tracking-wider uppercase overflow-hidden relative shrink-0">
+              <div className="flex items-center bg-[#eae8e7] px-2 py-0.5 rounded text-[10px] font-bold tracking-wider overflow-hidden relative shrink-0">
                 <div
-                  className={`absolute left-0 top-0 w-0.75 h-full ${chip.bar}`}
+                  className={`absolute left-0 top-0 w-0.75 h-full ${palette.bar}`}
                 />
-                <span className={`ml-2 ${chip.color}`}>{chip.label}</span>
+                <span className={`ml-2 ${palette.text}`}>{answer.stance}</span>
               </div>
             </div>
 

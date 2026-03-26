@@ -4,6 +4,7 @@ import { useQuery } from "convex/react"
 import { api } from "@/convex/_generated/api"
 import { useRouter } from "next/navigation"
 import { MessageSquareIcon, UsersIcon } from "lucide-react"
+import { StanceDistribution } from "@/components/StanceDistribution"
 import { useUser } from "@clerk/nextjs"
 import { NetworkHero } from "@/components/NetworkHero"
 import { TopNav } from "@/components/TopNav"
@@ -71,8 +72,8 @@ function FeedCard({
 }) {
   const stats = useQuery(api.questions.stats, { id: question._id as any })
 
-  const total = (stats?.support ?? 0) + (stats?.oppose ?? 0) + (stats?.neutral ?? 0)
-  const pct = (n: number) => total === 0 ? 0 : Math.round((n / total) * 100)
+  const stanceCounts = stats?.stanceCounts ?? []
+  const total = stanceCounts.reduce((s, e) => s + e.count, 0)
 
   return (
     <button
@@ -91,17 +92,19 @@ function FeedCard({
         </p>
       )}
 
-      {/* stance bar */}
+      {/* stance distribution */}
       {total > 0 && (
-        <div className="flex h-[3px] w-full overflow-hidden rounded-full bg-[#e4e2e2] mb-3">
-          <div className="h-full bg-primary transition-all" style={{ width: `${pct(stats!.support)}%` }} />
-          <div className="h-full bg-muted-foreground/30 transition-all" style={{ width: `${pct(stats!.neutral)}%` }} />
-          <div className="h-full bg-secondary transition-all" style={{ width: `${pct(stats!.oppose)}%` }} />
+        <div className="mb-3">
+          <StanceDistribution
+            stances={stats?.stances}
+            stanceCounts={stanceCounts}
+            variant="bar"
+          />
         </div>
       )}
 
       {/* meta */}
-      <div className="flex items-center gap-4 text-[10px] font-semibold tracking-wider uppercase text-muted-foreground">
+      <div className="flex items-center gap-3 text-[10px] font-semibold tracking-wider uppercase text-muted-foreground">
         <span className="flex items-center gap-1">
           <MessageSquareIcon className="size-2.5" />
           {stats?.answered ?? 0} 条回答
@@ -110,12 +113,6 @@ function FeedCard({
           <span className="flex items-center gap-1">
             <UsersIcon className="size-2.5" />
             {stats!.saw} 人
-          </span>
-        )}
-        {total > 0 && (
-          <span className="flex items-center gap-2 ml-auto">
-            <span className="text-primary">{pct(stats!.support)}% 支持</span>
-            <span className="text-secondary">{pct(stats!.oppose)}% 反对</span>
           </span>
         )}
         {question.status === "processing" && (

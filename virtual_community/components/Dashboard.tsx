@@ -15,7 +15,9 @@ export function Dashboard({
 
   if (!stats) return null;
 
-  const total = stats.support + stats.oppose + stats.neutral;
+  const stanceCounts = stats.stanceCounts ?? [];
+  const getCount = (stance: string) => stanceCounts.find((s) => s.stance === stance)?.count ?? 0;
+  const total = stanceCounts.reduce((s, e) => s + e.count, 0);
   const pct = (n: number) => (total === 0 ? 0 : Math.round((n / total) * 100));
 
   const isProcessing = question?.status === "processing";
@@ -52,9 +54,14 @@ export function Dashboard({
           立场分布
         </span>
         <div className="space-y-3">
-          <StanceBar label="支持" pct={pct(stats.support)} color="bg-primary" textColor="text-primary" />
-          <StanceBar label="反对" pct={pct(stats.oppose)}  color="bg-secondary" textColor="text-secondary" />
-          <StanceBar label="中立" pct={pct(stats.neutral)} color="bg-muted-foreground/40" textColor="text-muted-foreground" />
+          {(stats.stances ?? stanceCounts.map((s) => s.stance)).map((stance, i) => (
+            <StanceBar
+              key={stance}
+              label={stance}
+              pct={pct(getCount(stance))}
+              colorIndex={i}
+            />
+          ))}
         </div>
       </div>
 
@@ -76,19 +83,23 @@ export function Dashboard({
   );
 }
 
-function StanceBar({
-  label, pct, color, textColor,
-}: {
-  label: string; pct: number; color: string; textColor: string;
-}) {
+const STANCE_COLORS = [
+  { bar: "bg-primary", text: "text-primary" },
+  { bar: "bg-secondary", text: "text-secondary" },
+  { bar: "bg-amber-500", text: "text-amber-600" },
+  { bar: "bg-muted-foreground/40", text: "text-muted-foreground" },
+];
+
+function StanceBar({ label, pct, colorIndex }: { label: string; pct: number; colorIndex: number }) {
+  const { bar, text } = STANCE_COLORS[colorIndex % STANCE_COLORS.length];
   return (
     <div>
       <div className="flex justify-between text-[10px] font-semibold mb-1">
         <span className="text-muted-foreground tracking-wider">{label}</span>
-        <span className={textColor}>{pct}%</span>
+        <span className={text}>{pct}%</span>
       </div>
       <div className="h-0.75 w-full bg-[#eae8e7] rounded-full overflow-hidden">
-        <div className={`h-full ${color} transition-all duration-500`} style={{ width: `${pct}%` }} />
+        <div className={`h-full ${bar} transition-all duration-500`} style={{ width: `${pct}%` }} />
       </div>
     </div>
   );
