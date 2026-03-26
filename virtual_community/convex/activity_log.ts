@@ -4,11 +4,18 @@ import { v } from "convex/values";
 export const byQuestion = query({
   args: { question_id: v.id("questions") },
   handler: async (ctx, { question_id }) => {
-    return await ctx.db
+    const logs = await ctx.db
       .query("activity_log")
       .withIndex("by_question", (q) => q.eq("question_id", question_id))
       .order("asc")
       .collect();
+
+    return await Promise.all(
+      logs.map(async (log) => {
+        const persona = await ctx.db.get(log.persona_id);
+        return { ...log, persona };
+      }),
+    );
   },
 });
 

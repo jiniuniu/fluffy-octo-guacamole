@@ -16,9 +16,7 @@ const ACTION_META: Record<string, { label: string; color: string }> = {
 
 export function ActivityLog({ questionId }: { questionId: Id<"questions"> }) {
   const logs = useQuery(api.activity_log.byQuestion, { question_id: questionId });
-  const personas = useQuery(api.personas.list);
   const bottomRef = useRef<HTMLDivElement>(null);
-  const personaMap = new Map(personas?.map((p) => [p._id, p]));
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -34,7 +32,8 @@ export function ActivityLog({ questionId }: { questionId: Id<"questions"> }) {
           <p className="text-xs text-muted-foreground/50">等待中...</p>
         )}
         {logs?.map((log) => {
-          const persona = personaMap.get(log.persona_id);
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const persona = (log as any).persona;
           const meta = ACTION_META[log.action] ?? { label: log.action, color: "text-muted-foreground" };
 
           return (

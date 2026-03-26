@@ -63,10 +63,10 @@ export const run = internalAction({
         const result = await generateAnswer(
           persona,
           question.text,
+          enriched.description,
           existingAnswers.map((a) => ({ text: a.text, stance: a.stance })),
           stances,
         );
-        // Normalize: find exact match in stances list, fallback to raw value
         const normalizedStance =
           stances.find((s) => result.stance.includes(s)) ?? result.stance;
         const answerId = await ctx.runMutation(api.answers.create, {

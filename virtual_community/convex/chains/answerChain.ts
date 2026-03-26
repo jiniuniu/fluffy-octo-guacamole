@@ -26,17 +26,24 @@ type Persona = {
 
 type LengthStyle = "short" | "medium" | "long";
 
-const CLUSTER_BIAS: Record<string, number> = {
-  沉默中间派: -1,
-  开放理性派: 1,
-  现代进步派: 0,
-  乐观爱国派: 0,
-  传统全能派: 0,
-  功利强权派: -1,
+// Per-cluster: [lengthBias, tempMin, tempMax]
+// tempMin/tempMax define the sampling range for temperature
+const CLUSTER_PROFILE: Record<string, { bias: number; tempMin: number; tempMax: number }> = {
+  沉默中间派:  { bias: -1, tempMin: 0.6, tempMax: 0.8 },
+  开放理性派:  { bias:  1, tempMin: 0.7, tempMax: 0.9 },
+  现代进步派:  { bias:  0, tempMin: 0.75, tempMax: 0.95 },
+  乐观爱国派:  { bias:  0, tempMin: 0.65, tempMax: 0.85 },
+  传统全能派:  { bias:  0, tempMin: 0.6, tempMax: 0.8 },
+  功利强权派:  { bias: -1, tempMin: 0.55, tempMax: 0.75 },
 };
 
+function sampleTemperature(clusterLabel: string): number {
+  const { tempMin, tempMax } = CLUSTER_PROFILE[clusterLabel] ?? { tempMin: 0.9, tempMax: 1.2 };
+  return tempMin + Math.random() * (tempMax - tempMin);
+}
+
 function sampleLengthStyle(clusterLabel: string): LengthStyle {
-  const bias = CLUSTER_BIAS[clusterLabel] ?? 0;
+  const bias = CLUSTER_PROFILE[clusterLabel]?.bias ?? 0;
   const weights = {
     short: 0.5 + bias * 0.15,
     medium: 0.3,
@@ -63,7 +70,7 @@ const prompt = ChatPromptTemplate.fromMessages([
 
 基本信息：{age}岁，{gender}，{city}，{occupation}，{education}学历。
 
-请以这个人物的视角、语气和价值观来回答问题。语言要自然口语化，像在知乎或微博评论区发言。不要说教，不要假装客观，直接表达这个人物会有的真实想法。不要透露任何关于你是AI或角色扮演的信息。
+请完全以这个人物的身份、语气、教育背景和价值观来发言。不同年龄、职业、城市的人说话方式差异很大——一个50岁工厂工人和一个25岁互联网从业者的表达方式应该截然不同。直接表达这个人物会有的真实想法，不要试图客观或全面。不要透露任何关于你是AI或角色扮演的信息。
 
 字数要求：{length_instruction}
 
@@ -76,16 +83,17 @@ const prompt = ChatPromptTemplate.fromMessages([
 
 function buildUserPrompt(
   questionText: string,
+  description: string,
   existingAnswers: { text: string; stance: string }[],
 ): string {
-  let prompt = `问题：${questionText}`;
+  let prompt = `话题：${questionText}\n\n背景：${description}`;
   if (existingAnswers.length > 0) {
-    prompt += `\n\n已有回答（按热度排序）：\n`;
+    prompt += `\n\n当前已有观点（按热度排序）：\n`;
     prompt += existingAnswers
       .slice(0, 10)
-      .map((a, i) => `${i + 1}. ${a.text}`)
+      .map((a, i) => `${i + 1}. [${a.stance}] ${a.text}`)
       .join("\n\n");
-    prompt += `\n\n请发表你的看法，可以回应已有观点，也可以提出新角度。`;
+    prompt += `\n\n请以你自己的方式发表看法，可以回应已有观点，也可以提出新角度。`;
   }
   return prompt;
 }
@@ -93,11 +101,13 @@ function buildUserPrompt(
 export async function generateAnswer(
   persona: Persona,
   questionText: string,
+  description: string,
   existingAnswers: { text: string; stance: string }[],
   stances: string[],
 ) {
   const style = sampleLengthStyle(persona.cluster_label);
-  const llm = getLLM(0.9);
+  const temperature = sampleTemperature(persona.cluster_label);
+  const llm = getLLM(temperature);
   const chain = prompt.pipe(llm).pipe(parser);
   return await chain.invoke({
     bio: persona.bio,
@@ -108,7 +118,7 @@ export async function generateAnswer(
     education: persona.demo.education,
     length_instruction: LENGTH_INSTRUCTION[style],
     stances: stances.join(" / "),
-    user_prompt: buildUserPrompt(questionText, existingAnswers),
+    user_prompt: buildUserPrompt(questionText, description, existingAnswers),
     format_instructions: parser.getFormatInstructions(),
   });
 }

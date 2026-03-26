@@ -8,53 +8,81 @@ export const list = query({
   },
 });
 
-// Cluster proportions from K-means analysis (output_cluster_profiles.json)
-const CLUSTER_PROPORTIONS: Record<number, number> = {
-  0: 0.14837606837606837,
-  1: 0.19179487179487179,
-  2: 0.13931623931623932,
-  3: 0.12273504273504274,
-  4: 0.27982905982905984,
-  5: 0.11794871794871795,
+// Cluster size boundaries — populated by running scripts/assignSortKeys.mjs
+// sort_key is 0-based within each cluster
+// { cluster: size } — update if personas are re-imported
+const CLUSTER_SIZES: Record<number, number> = {
+  0: 148,
+  1: 192,
+  2: 139,
+  3: 123,
+  4: 280,
+  5: 118,
 };
 
-function sampleByCluster(all: any[], n: number): any[] {
-  const byCluster: Record<number, any[]> = {};
-  for (const p of all) {
-    (byCluster[p.cluster] ??= []).push(p);
-  }
-
-  // allocate seats per cluster, fix rounding drift on largest cluster
-  const seats: Record<number, number> = {};
-  let total = 0;
-  for (const [c, prop] of Object.entries(CLUSTER_PROPORTIONS)) {
-    seats[Number(c)] = Math.round(prop * n);
-    total += seats[Number(c)];
-  }
-  const drift = n - total;
-  if (drift !== 0) {
-    const largest = Number(Object.entries(seats).sort((a, b) => b[1] - a[1])[0][0]);
-    seats[largest] += drift;
-  }
-
-  const result: any[] = [];
-  for (const [c, count] of Object.entries(seats)) {
-    const pool = byCluster[Number(c)] ?? [];
-    // Fisher-Yates shuffle
-    for (let i = pool.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [pool[i], pool[j]] = [pool[j], pool[i]];
-    }
-    result.push(...pool.slice(0, count));
-  }
-  return result;
-}
+const CLUSTER_PROPORTIONS: Record<number, number> = {
+  0: 0.148,
+  1: 0.192,
+  2: 0.139,
+  3: 0.123,
+  4: 0.280,
+  5: 0.118,
+};
 
 export const sample = query({
   args: { n: v.number() },
   handler: async (ctx, { n }) => {
-    const all = await ctx.db.query("personas").collect();
-    return sampleByCluster(all, n);
+    // Allocate seats per cluster
+    const seats: Record<number, number> = {};
+    let total = 0;
+    for (const [c, prop] of Object.entries(CLUSTER_PROPORTIONS)) {
+      seats[Number(c)] = Math.round(prop * n);
+      total += seats[Number(c)];
+    }
+    const drift = n - total;
+    if (drift !== 0) {
+      const largest = Number(Object.entries(seats).sort((a, b) => b[1] - a[1])[0][0]);
+      seats[largest] += drift;
+    }
+
+    const result: any[] = [];
+    for (const [c, count] of Object.entries(seats)) {
+      const cluster = Number(c);
+      const size = CLUSTER_SIZES[cluster] ?? 0;
+      if (size === 0 || count === 0) continue;
+
+      // Random start within cluster, wrap around if needed
+      const start = Math.floor(Math.random() * size);
+      const end = start + count;
+
+      if (end <= size) {
+        const rows = await ctx.db
+          .query("personas")
+          .withIndex("by_cluster_sort", (q) =>
+            q.eq("cluster", cluster).gte("sort_key", start).lt("sort_key", end)
+          )
+          .collect();
+        result.push(...rows);
+      } else {
+        // wrap: take from start→size, then 0→remainder
+        const [a, b] = await Promise.all([
+          ctx.db
+            .query("personas")
+            .withIndex("by_cluster_sort", (q) =>
+              q.eq("cluster", cluster).gte("sort_key", start).lt("sort_key", size)
+            )
+            .collect(),
+          ctx.db
+            .query("personas")
+            .withIndex("by_cluster_sort", (q) =>
+              q.eq("cluster", cluster).gte("sort_key", 0).lt("sort_key", end - size)
+            )
+            .collect(),
+        ]);
+        result.push(...a, ...b);
+      }
+    }
+    return result;
   },
 });
 
@@ -102,6 +130,27 @@ export const insert = mutation({
   },
   handler: async (ctx, args) => {
     return await ctx.db.insert("personas", args);
+  },
+});
+
+// One-time migration: assign sort_key per cluster (0-based within each cluster)
+// Run once via script after schema deploy
+export const assignSortKeys = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const all = await ctx.db.query("personas").collect();
+    const byCluster: Record<number, typeof all> = {};
+    for (const p of all) {
+      (byCluster[p.cluster] ??= []).push(p);
+    }
+    let total = 0;
+    for (const [, personas] of Object.entries(byCluster).sort((a, b) => Number(a[0]) - Number(b[0]))) {
+      for (let i = 0; i < personas.length; i++) {
+        await ctx.db.patch(personas[i]._id, { sort_key: i });
+        total++;
+      }
+    }
+    return { patched: total };
   },
 });
 

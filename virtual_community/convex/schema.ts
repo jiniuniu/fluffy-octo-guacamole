@@ -60,7 +60,8 @@ export default defineSchema({
     }),
     bio: v.string(),
     vector: personaVector,
-  }),
+    sort_key: v.optional(v.number()),
+  }).index("by_cluster_sort", ["cluster", "sort_key"]),
 
   questions: defineTable({
     text: v.string(),

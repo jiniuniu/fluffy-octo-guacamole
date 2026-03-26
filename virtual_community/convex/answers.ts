@@ -16,17 +16,24 @@ export const byQuestion = query({
       .withIndex("by_question", (q) => q.eq("question_id", question_id))
       .collect();
 
-    // sort by like_count desc
     answers.sort((a, b) => b.like_count - a.like_count);
 
-    // attach replies
     const withReplies = await Promise.all(
       answers.map(async (answer) => {
+        const persona = await ctx.db.get(answer.persona_id);
         const replies = await ctx.db
           .query("replies")
           .withIndex("by_answer", (q) => q.eq("answer_id", answer._id))
           .collect();
-        return { ...answer, replies };
+
+        const repliesWithPersona = await Promise.all(
+          replies.map(async (reply) => {
+            const rPersona = reply.persona_id ? await ctx.db.get(reply.persona_id) : null;
+            return { ...reply, persona: rPersona };
+          }),
+        );
+
+        return { ...answer, persona, replies: repliesWithPersona };
       }),
     );
 

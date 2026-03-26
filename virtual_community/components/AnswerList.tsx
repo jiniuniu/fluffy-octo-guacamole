@@ -32,8 +32,6 @@ export function AnswerList({
 }) {
   const answers = useQuery(api.answers.byQuestion, { question_id: questionId });
   const question = useQuery(api.questions.getById, { id: questionId });
-  const personas = useQuery(api.personas.list);
-  const personaMap = new Map(personas?.map((p) => [p._id, p]));
 
   const stanceMap = useMemo(() => {
     const stances = (question as { stances?: string[] } | null | undefined)?.stances;
@@ -81,7 +79,8 @@ export function AnswerList({
     <div className="space-y-10">
       {feed.map((answer) => {
         const isExplorer = "_isExplorer" in answer && answer._isExplorer;
-        const persona = personaMap.get(answer.persona_id);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const persona = (answer as any).persona;
         const paletteIdx = stanceMap[answer.stance] ?? (STANCE_PALETTE.length - 1);
         const palette = STANCE_PALETTE[paletteIdx];
 
@@ -157,10 +156,8 @@ export function AnswerList({
               <div className="mt-5 pl-6 border-l-2 border-[#f0eded] space-y-4">
                 {answer.replies.map((reply) => {
                   const isUser = reply.author === "user";
-                  const rPersona =
-                    reply.persona_id != null
-                      ? personaMap.get(reply.persona_id)
-                      : null;
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  const rPersona = (reply as any).persona ?? null;
                   return (
                     <div key={reply._id} className="flex items-start gap-3">
                       <div className="w-7 h-7 rounded-md bg-[#f0eded] flex items-center justify-center shrink-0 text-muted-foreground">
