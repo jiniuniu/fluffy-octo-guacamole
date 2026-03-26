@@ -24,10 +24,10 @@ export default function QuestionPage({
       <Sidebar />
 
       {/* Center: question + answers */}
-      <div className="flex flex-1 flex-col overflow-hidden ml-64">
+      <div className="flex flex-1 flex-col overflow-hidden ml-64 mr-80">
         {/* Question hero header */}
         <header className="shrink-0 px-12 pt-10 pb-8 bg-background">
-          <div className="max-w-3xl">
+          <div className="max-w-3xl mx-auto">
             {question ? (
               <>
                 <div className="flex items-center justify-between gap-4 mb-4">
@@ -60,7 +60,7 @@ export default function QuestionPage({
 
         {/* Answers */}
         <div className="flex-1 overflow-y-auto px-12 pb-10">
-          <div className="max-w-3xl">
+          <div className="max-w-3xl mx-auto">
             <AnswerList questionId={questionId} />
           </div>
         </div>
