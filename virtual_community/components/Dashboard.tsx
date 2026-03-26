@@ -51,7 +51,7 @@ export function Dashboard({
       {/* Stance distribution */}
       <div>
         <span className="text-[10px] font-bold tracking-widest uppercase text-muted-foreground block mb-4">
-          立场分布
+          情绪分布
         </span>
         <div className="space-y-3">
           {stanceCounts.map((s) => s.stance).map((stance, i) => (

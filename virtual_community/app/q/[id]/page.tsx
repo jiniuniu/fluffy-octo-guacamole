@@ -1,9 +1,9 @@
 "use client";
 
-import { useQuery } from "convex/react";
+import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
-import { use } from "react";
+import { use, useState } from "react";
 import { Sidebar } from "@/components/Sidebar";
 import { AnswerList } from "@/components/AnswerList";
 import { ActivityLog } from "@/components/ActivityLog";
@@ -18,6 +18,17 @@ export default function QuestionPage({
   const { id } = use(params);
   const questionId = id as Id<"questions">;
   const question = useQuery(api.questions.getById, { id: questionId });
+  const retrySimulation = useMutation(api.questions.retrySimulation);
+  const [retrying, setRetrying] = useState(false);
+
+  async function handleRetry() {
+    setRetrying(true);
+    try {
+      await retrySimulation({ id: questionId });
+    } finally {
+      setRetrying(false);
+    }
+  }
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
@@ -31,7 +42,18 @@ export default function QuestionPage({
             {question ? (
               <>
                 <div className="flex items-center justify-between gap-4 mb-4">
-                  <StatusBadge status={question.status} />
+                  <div className="flex items-center gap-3">
+                    <StatusBadge status={question.status} />
+                    {question.status === "failed" && (
+                      <button
+                        onClick={handleRetry}
+                        disabled={retrying}
+                        className="text-[10px] font-bold tracking-widest uppercase text-secondary hover:text-secondary/80 transition-colors disabled:opacity-50"
+                      >
+                        {retrying ? "重试中..." : "↺ 重试"}
+                      </button>
+                    )}
+                  </div>
                   <PublicToggle questionId={questionId} />
                 </div>
                 <h1 className="text-3xl font-bold tracking-tight text-foreground leading-tight">
@@ -92,6 +114,13 @@ function StatusBadge({ status }: { status: string }) {
     return (
       <span className="text-[10px] font-bold tracking-widest uppercase text-muted-foreground">
         已完成
+      </span>
+    );
+  }
+  if (status === "failed") {
+    return (
+      <span className="text-[10px] font-bold tracking-widest uppercase text-secondary">
+        处理失败
       </span>
     );
   }

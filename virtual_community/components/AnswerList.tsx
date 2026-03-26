@@ -73,7 +73,6 @@ export function AnswerList({
   return (
     <div className="space-y-10">
       {feed.map((answer) => {
-        const isExplorer = "_isExplorer" in answer && answer._isExplorer;
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const persona = (answer as any).persona;
         const palette = getEmotionPalette(answer.stance);

@@ -52,7 +52,7 @@ export default function PublicQuestionPage({
             {stats && (stats.stanceCounts?.length ?? 0) > 0 && (
               <div className="mt-6 p-4 bg-[#f6f3f2] rounded-lg">
                 <p className="text-[10px] font-bold tracking-widest uppercase text-muted-foreground mb-3">
-                  立场分布 · {stats.totalAnswers} 条回答 · {stats.saw} 人参与
+                  情绪分布 · {stats.totalAnswers} 条回答 · {stats.saw} 人参与
                 </p>
                 <StanceDistribution
                   stances={stats.stances}

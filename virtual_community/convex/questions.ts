@@ -90,6 +90,13 @@ export const dailyUsage = query({
   },
 });
 
+export const updatePersonaIds = mutation({
+  args: { id: v.id("questions"), persona_ids: v.array(v.id("personas")) },
+  handler: async (ctx, { id, persona_ids }) => {
+    await ctx.db.patch(id, { persona_ids });
+  },
+});
+
 export const updateEnriched = mutation({
   args: {
     id: v.id("questions"),
@@ -109,10 +116,38 @@ export const updateStatus = mutation({
       v.literal("pending"),
       v.literal("processing"),
       v.literal("done"),
+      v.literal("failed"),
     ),
   },
   handler: async (ctx, { id, status }) => {
     await ctx.db.patch(id, { status });
+  },
+});
+
+export const retrySimulation = mutation({
+  args: { id: v.id("questions") },
+  handler: async (ctx, { id }) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Not authenticated");
+    const question = await ctx.db.get(id);
+    if (!question) throw new Error("Not found");
+    if (question.author !== identity.subject) throw new Error("Forbidden");
+    await ctx.db.patch(id, { status: "processing" });
+    await ctx.scheduler.runAfter(0, internal.simulation.resume, {
+      question_id: id,
+    });
+  },
+});
+
+// Returns persona IDs already logged for a question (used by resume to skip)
+export const getActivityPersonaIds = query({
+  args: { id: v.id("questions") },
+  handler: async (ctx, { id }) => {
+    const logs = await ctx.db
+      .query("activity_log")
+      .withIndex("by_question", (q) => q.eq("question_id", id))
+      .collect();
+    return [...new Set(logs.map((l) => l.persona_id as string))];
   },
 });
 

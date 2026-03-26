@@ -43,7 +43,7 @@ function sampleEmotion(): EmotionLabel {
 
 const AnswerSchema = z.object({
   text: z.string().describe("回答正文，符合人物语气，不要透露自己的身份信息"),
-  stance: z.enum(EMOTION_LABELS).describe("选择最符合这条回答情绪基调的标签"),
+  stance: z.string().describe("选择最符合这条回答情绪基调的标签"),
 });
 
 const parser = StructuredOutputParser.fromZodSchema(AnswerSchema);
