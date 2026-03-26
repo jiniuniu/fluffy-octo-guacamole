@@ -74,6 +74,8 @@ const prompt = ChatPromptTemplate.fromMessages([
 
 字数要求：{length_instruction}
 
+注意：不要在回答开头直接陈述自己的立场标签，而是用这个人物自然的说话方式表达观点，立场要从内容中自然流露。
+
 立场选项（必须从以下选项中选一个）：{stances}
 
 {format_instructions}`,
