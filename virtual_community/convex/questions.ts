@@ -96,10 +96,9 @@ export const updateEnriched = mutation({
     title: v.string(),
     description: v.string(),
     simulation_size: v.number(),
-    stances: v.array(v.string()),
   },
-  handler: async (ctx, { id, title, description, simulation_size, stances }) => {
-    await ctx.db.patch(id, { title, description, simulation_size, stances });
+  handler: async (ctx, { id, title, description, simulation_size }) => {
+    await ctx.db.patch(id, { title, description, simulation_size });
   },
 });
 

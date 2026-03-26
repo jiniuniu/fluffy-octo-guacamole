@@ -54,7 +54,7 @@ export function Dashboard({
           立场分布
         </span>
         <div className="space-y-3">
-          {(stats.stances ?? stanceCounts.map((s) => s.stance)).map((stance, i) => (
+          {stanceCounts.map((s) => s.stance).map((stance, i) => (
             <StanceBar
               key={stance}
               label={stance}
@@ -83,15 +83,21 @@ export function Dashboard({
   );
 }
 
-const STANCE_COLORS = [
-  { bar: "bg-primary", text: "text-primary" },
-  { bar: "bg-secondary", text: "text-secondary" },
-  { bar: "bg-amber-500", text: "text-amber-600" },
+const EMOTION_COLORS: Record<string, { bar: string; text: string }> = {
+  愤怒: { bar: "bg-secondary",           text: "text-secondary" },
+  认同: { bar: "bg-primary",             text: "text-primary" },
+  担忧: { bar: "bg-amber-500",           text: "text-amber-600" },
+  讽刺: { bar: "bg-muted-foreground/40", text: "text-muted-foreground" },
+};
+const FALLBACK_COLORS = [
+  { bar: "bg-primary",           text: "text-primary" },
+  { bar: "bg-secondary",         text: "text-secondary" },
+  { bar: "bg-amber-500",         text: "text-amber-600" },
   { bar: "bg-muted-foreground/40", text: "text-muted-foreground" },
 ];
 
 function StanceBar({ label, pct, colorIndex }: { label: string; pct: number; colorIndex: number }) {
-  const { bar, text } = STANCE_COLORS[colorIndex % STANCE_COLORS.length];
+  const { bar, text } = EMOTION_COLORS[label] ?? FALLBACK_COLORS[colorIndex % FALLBACK_COLORS.length];
   return (
     <div>
       <div className="flex justify-between text-[10px] font-semibold mb-1">

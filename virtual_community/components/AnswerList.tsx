@@ -9,18 +9,20 @@ import { ThumbsUpIcon, SendIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PersonaCard } from "@/components/PersonaCard";
 
-const STANCE_PALETTE = [
-  { border: "border-l-[3px] border-primary", text: "text-primary", bar: "bg-primary" },
-  { border: "border-l-[3px] border-secondary", text: "text-secondary", bar: "bg-secondary" },
-  { border: "border-l-[3px] border-amber-500", text: "text-amber-600", bar: "bg-amber-500" },
+const EMOTION_PALETTE: Record<string, { border: string; text: string; bar: string }> = {
+  愤怒: { border: "border-l-[3px] border-secondary",           text: "text-secondary",       bar: "bg-secondary" },
+  认同: { border: "border-l-[3px] border-primary",             text: "text-primary",         bar: "bg-primary" },
+  担忧: { border: "border-l-[3px] border-amber-500",           text: "text-amber-600",       bar: "bg-amber-500" },
+  讽刺: { border: "border-l-[3px] border-muted-foreground/30", text: "text-muted-foreground", bar: "bg-muted-foreground/40" },
+};
+const FALLBACK_PALETTE = [
+  { border: "border-l-[3px] border-primary",             text: "text-primary",         bar: "bg-primary" },
+  { border: "border-l-[3px] border-secondary",           text: "text-secondary",       bar: "bg-secondary" },
+  { border: "border-l-[3px] border-amber-500",           text: "text-amber-600",       bar: "bg-amber-500" },
   { border: "border-l-[3px] border-muted-foreground/30", text: "text-muted-foreground", bar: "bg-muted-foreground/40" },
 ];
-
-// Build a stance → palette index map from an ordered list of stances
-function buildStanceMap(stances: string[]): Record<string, number> {
-  const map: Record<string, number> = {};
-  stances.forEach((s, i) => { map[s] = i % STANCE_PALETTE.length; });
-  return map;
+function getEmotionPalette(stance: string) {
+  return EMOTION_PALETTE[stance] ?? FALLBACK_PALETTE[0];
 }
 
 export function AnswerList({
@@ -31,14 +33,7 @@ export function AnswerList({
   readonly?: boolean;
 }) {
   const answers = useQuery(api.answers.byQuestion, { question_id: questionId });
-  const question = useQuery(api.questions.getById, { id: questionId });
 
-  const stanceMap = useMemo(() => {
-    const stances = (question as { stances?: string[] } | null | undefined)?.stances;
-    if (stances && stances.length > 0) return buildStanceMap(stances);
-    // fallback for old data
-    return buildStanceMap(["support", "neutral", "oppose"]);
-  }, [question]);
 
   // Stable explorer index — only re-roll when answer count changes
   const explorerIndexRef = useRef<number | null>(null);
@@ -81,19 +76,13 @@ export function AnswerList({
         const isExplorer = "_isExplorer" in answer && answer._isExplorer;
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const persona = (answer as any).persona;
-        const paletteIdx = stanceMap[answer.stance] ?? (STANCE_PALETTE.length - 1);
-        const palette = STANCE_PALETTE[paletteIdx];
+        const palette = getEmotionPalette(answer.stance);
 
         return (
           <article
             key={answer._id}
             className={`relative pl-6 ${palette.border}`}
           >
-            {isExplorer && (
-              <div className="mb-2 text-[10px] font-semibold tracking-widest uppercase text-muted-foreground/50">
-                随机探索
-              </div>
-            )}
 
             {/* Author row */}
             <div className="flex items-center gap-3 mb-2">

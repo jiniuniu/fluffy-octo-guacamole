@@ -9,7 +9,6 @@ const EnrichSchema = z.object({
   title: z.string().describe("简洁的问题标题，15字以内，概括核心议题"),
   description: z.string().describe("2-3句话的背景描述，说明这个问题的社会背景和讨论价值，客观中性"),
   simulation_size: z.number().int().describe("建议参与模拟的虚拟人数，范围20-100。根据话题在中国社会语境下的争议程度决定：高争议/强价值观对立（如LGBT、孝道、移民）取80-100，中等争议（如996、躺平、全职太太）取40-60，低争议/偏事实性取20-30"),
-  stances: z.array(z.string()).min(2).max(4).describe("针对这个话题的2-4个典型立场标签，每个标签4-8个字，要能覆盖主要的观点分歧。例如：['坚决支持','有条件支持','持保留态度','明确反对']，或['认为是剥削','觉得是奋斗文化','无所谓随大流']。标签要具体贴合话题，不要用通用的支持/反对/中立。"),
 });
 
 const parser = StructuredOutputParser.fromZodSchema(EnrichSchema);
@@ -22,7 +21,6 @@ const prompt = ChatPromptTemplate.fromMessages([
 标题要求：简洁有力，15字以内，抓住核心争议点。
 描述要求：2-3句话，说明问题的社会背景和讨论价值，保持客观中性，不带立场。
 模拟规模：评估该话题在中国社会的争议烈度，给出20-100之间的整数。高争议话题（强价值观对立）取大值，低争议话题取小值。
-立场标签：为这个话题生成2-4个具体的立场标签，要能代表真实的观点分歧，标签要贴合话题本身，不要用"支持/反对/中立"这类通用词。
 
 {format_instructions}`,
   ],

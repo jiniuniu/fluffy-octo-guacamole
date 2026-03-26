@@ -1,11 +1,20 @@
 "use client";
 
-const COLORS = [
-  { bar: "bg-primary", text: "text-primary" },
-  { bar: "bg-secondary", text: "text-secondary" },
-  { bar: "bg-amber-500", text: "text-amber-600" },
+const EMOTION_COLORS: Record<string, { bar: string; text: string }> = {
+  愤怒: { bar: "bg-secondary",        text: "text-secondary" },
+  认同: { bar: "bg-primary",          text: "text-primary" },
+  担忧: { bar: "bg-amber-500",        text: "text-amber-600" },
+  讽刺: { bar: "bg-muted-foreground/40", text: "text-muted-foreground" },
+};
+const FALLBACK_COLORS = [
+  { bar: "bg-primary",          text: "text-primary" },
+  { bar: "bg-secondary",        text: "text-secondary" },
+  { bar: "bg-amber-500",        text: "text-amber-600" },
   { bar: "bg-muted-foreground/40", text: "text-muted-foreground" },
 ];
+function getColor(stance: string, index: number) {
+  return EMOTION_COLORS[stance] ?? FALLBACK_COLORS[index % FALLBACK_COLORS.length];
+}
 
 type StanceEntry = { stance: string; count: number };
 
@@ -38,7 +47,7 @@ export function StanceDistribution({
           {orderedStances.map((stance, i) => (
             <div
               key={stance}
-              className={`h-full ${COLORS[i % COLORS.length].bar} transition-all`}
+              className={`h-full ${getColor(stance, i).bar} transition-all`}
               style={{ width: `${pct(stance)}%` }}
             />
           ))}
@@ -48,7 +57,7 @@ export function StanceDistribution({
           {orderedStances.map((stance, i) => (
             <span
               key={stance}
-              className={`text-[10px] font-semibold ${COLORS[i % COLORS.length].text}`}
+              className={`text-[10px] font-semibold ${getColor(stance, i).text}`}
             >
               {pct(stance)}% {stance}
             </span>
@@ -66,7 +75,7 @@ export function StanceDistribution({
         {orderedStances.map((stance, i) => (
           <div
             key={stance}
-            className={`h-full ${COLORS[i % COLORS.length].bar} transition-all duration-500`}
+            className={`h-full ${getColor(stance, i).bar} transition-all duration-500`}
             style={{ width: `${pct(stance)}%` }}
           />
         ))}
@@ -75,9 +84,9 @@ export function StanceDistribution({
       <div className="space-y-2">
         {orderedStances.map((stance, i) => (
           <div key={stance} className="flex items-center gap-3">
-            <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${COLORS[i % COLORS.length].bar}`} />
+            <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${getColor(stance, i).bar}`} />
             <span className="text-xs text-muted-foreground flex-1">{stance}</span>
-            <span className={`text-xs font-semibold tabular-nums ${COLORS[i % COLORS.length].text}`}>
+            <span className={`text-xs font-semibold tabular-nums ${getColor(stance, i).text}`}>
               {pct(stance)}%
             </span>
             <span className="text-[10px] text-muted-foreground/50 tabular-nums w-8 text-right">

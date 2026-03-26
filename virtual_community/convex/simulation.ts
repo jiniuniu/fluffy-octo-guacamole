@@ -27,13 +27,11 @@ export const run = internalAction({
     // step 1: enrich user input → title + description + simulation_size
     const enriched = await enrichQuestion(question.text);
     const simulationSize = Math.max(20, Math.min(100, enriched.simulation_size ?? SIMULATION_SIZE));
-    const stances = enriched.stances ?? ["支持", "中立", "反对"];
     await ctx.runMutation(api.questions.updateEnriched, {
       id: question_id,
       title: enriched.title,
       description: enriched.description,
       simulation_size: simulationSize,
-      stances,
     });
 
     // step 2: extract topic vector
@@ -65,10 +63,8 @@ export const run = internalAction({
           question.text,
           enriched.description,
           existingAnswers.map((a) => ({ text: a.text, stance: a.stance })),
-          stances,
         );
-        const normalizedStance =
-          stances.find((s) => result.stance.includes(s)) ?? result.stance;
+        const normalizedStance = result.stance;
         const answerId = await ctx.runMutation(api.answers.create, {
           question_id,
           persona_id: persona._id,
