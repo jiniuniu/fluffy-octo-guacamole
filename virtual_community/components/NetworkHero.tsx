@@ -126,8 +126,7 @@ export function NetworkHero({ isSignedIn }: { isSignedIn: boolean }) {
 
   return (
     <section
-      className="relative overflow-hidden border-b border-border/30 bg-background"
-      style={{ height: 340 }}
+      className="relative overflow-hidden border-b border-border/30 bg-background h-60 sm:h-[340px]"
     >
       <canvas ref={canvasRef} className="absolute inset-0 h-full w-full" />
 

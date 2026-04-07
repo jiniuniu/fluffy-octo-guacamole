@@ -6,7 +6,7 @@ import { api } from "@/convex/_generated/api"
 import { useRouter } from "next/navigation"
 import { Sidebar } from "@/components/Sidebar"
 import { useUser, SignInButton } from "@clerk/nextjs"
-import { ArrowUpIcon } from "lucide-react"
+import { ArrowUpIcon, MenuIcon } from "lucide-react"
 
 // 今日话题：围绕价值观核心维度，每个话题都能引发支持与反对
 const TRENDING = [
@@ -57,6 +57,7 @@ export default function NewPage() {
   const remaining = usage ? (usage.isAdmin ? null : usage.limit - usage.used) : null
   const isExhausted = !usage?.isAdmin && remaining !== null && remaining <= 0
 
+  const [sidebarOpen, setSidebarOpen] = useState(false)
   const [tickerIndex, setTickerIndex] = useState(0)
   const [tickerVisible, setTickerVisible] = useState(true)
 
@@ -91,9 +92,23 @@ export default function NewPage() {
 
   return (
     <div className="flex h-screen bg-background">
-      <Sidebar />
+      {/* Sidebar: hidden on mobile */}
+      <div className="hidden md:block">
+        <Sidebar />
+      </div>
+      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-      <main className="flex flex-1 flex-col items-center justify-center ml-64 px-12">
+      {/* Mobile top bar */}
+      <div className="md:hidden fixed top-0 left-0 right-0 z-10 flex items-center px-4 h-14 bg-background/80 backdrop-blur-xl border-b border-border/30">
+        <button
+          onClick={() => setSidebarOpen(true)}
+          className="p-1 text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <MenuIcon className="size-5" />
+        </button>
+      </div>
+
+      <main className="flex flex-1 flex-col items-center justify-center md:ml-64 px-4 sm:px-12 pt-14 md:pt-0">
         <div className="w-full max-w-2xl">
 
           {/* Ticker */}

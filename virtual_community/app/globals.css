@@ -95,6 +95,12 @@
   }
 }
 
+/* Shimmer sweep animation */
+@keyframes shimmer {
+  0%   { transform: translateX(-200%); }
+  100% { transform: translateX(400%); }
+}
+
 /* Scrollbar hide utility */
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }

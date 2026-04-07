@@ -19,6 +19,7 @@ import type * as personas from "../personas.js";
 import type * as questions from "../questions.js";
 import type * as replies from "../replies.js";
 import type * as simulation from "../simulation.js";
+import type * as testLLM from "../testLLM.js";
 
 import type {
   ApiFromModules,
@@ -38,6 +39,7 @@ declare const fullApi: ApiFromModules<{
   questions: typeof questions;
   replies: typeof replies;
   simulation: typeof simulation;
+  testLLM: typeof testLLM;
 }>;
 
 /**

@@ -4,7 +4,7 @@ import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useRouter, useParams } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { PlusIcon } from "lucide-react";
+import { PlusIcon, XIcon } from "lucide-react";
 import { SignInButton, UserButton, useUser } from "@clerk/nextjs";
 import { Logo } from "@/components/Logo";
 
@@ -20,23 +20,52 @@ const STATUS_COLOR: Record<string, string> = {
   done:       "text-muted-foreground/50",
 };
 
-export function Sidebar() {
+interface SidebarProps {
+  open?: boolean;
+  onClose?: () => void;
+}
+
+export function Sidebar({ open, onClose }: SidebarProps = {}) {
   const questions = useQuery(api.questions.list);
   const router = useRouter();
   const params = useParams();
   const currentId = params?.id as string | undefined;
   const { isSignedIn, user } = useUser();
 
+  // Mobile: drawer mode (controlled by open/onClose)
+  // Desktop: always visible (open prop ignored)
   return (
-    <aside className="fixed left-0 top-0 h-screen w-64 bg-[#f6f3f2] flex flex-col py-6 px-4 gap-4 overflow-y-auto no-scrollbar z-40">
+    <>
+      {/* Mobile backdrop */}
+      {open && (
+        <div
+          className="fixed inset-0 z-30 bg-black/30 md:hidden"
+          onClick={onClose}
+        />
+      )}
 
-      {/* Logo */}
-      <div className="mb-2 px-1">
+      <aside className={cn(
+        "fixed left-0 top-0 h-screen w-64 bg-[#f6f3f2] flex flex-col py-6 px-4 gap-4 overflow-y-auto no-scrollbar z-40 transition-transform duration-300",
+        // Mobile: slide in/out as drawer
+        "md:translate-x-0",
+        open ? "translate-x-0" : "-translate-x-full md:translate-x-0",
+      )}>
+
+      {/* Logo + mobile close button */}
+      <div className="mb-2 px-1 flex items-center justify-between">
         <Logo
           variant="full"
           className="h-10 w-auto text-primary cursor-pointer hover:opacity-70 transition-opacity"
           onClick={() => router.push("/")}
         />
+        {onClose && (
+          <button
+            onClick={onClose}
+            className="md:hidden p-1 text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <XIcon className="size-4" />
+          </button>
+        )}
       </div>
 
       {/* New Question button — above history */}
@@ -117,6 +146,7 @@ export function Sidebar() {
           )}
         </div>
       </div>
-    </aside>
+      </aside>
+    </>
   );
 }
